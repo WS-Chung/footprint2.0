@@ -1,0 +1,576 @@
+/* ============================================================
+   footprint-v2 — 정적 HTML + Leaflet + Supabase JS
+   클라이언트 단독으로 모든 인터랙션을 처리해 즉시 반응한다.
+   ============================================================ */
+
+(() => {
+  "use strict";
+
+  // ── 설정 검증 ────────────────────────────────────────
+  if (!window.FP_CONFIG) {
+    document.body.innerHTML =
+      "<pre style='padding:24px;font-family:monospace;'>" +
+      "config.js 가 없습니다. config.example.js 를 복사해 config.js 를 만들고 키를 채워 주세요." +
+      "</pre>";
+    return;
+  }
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, VWORLD_KEY } = window.FP_CONFIG;
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    document.body.innerHTML =
+      "<pre style='padding:24px;font-family:monospace;'>" +
+      "SUPABASE_URL / SUPABASE_ANON_KEY 가 비어 있습니다." +
+      "</pre>";
+    return;
+  }
+
+  const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ── 상수 / 상태 ─────────────────────────────────────
+  const TABLE = "footprints";
+  const DEFAULT_CENTER = [37.34541, 127.08995];
+  const ICON_SIZE = [40, 52];
+  const TILE_OPACITY = 0.5;
+
+  const state = {
+    user: "운석",
+    isAdding: false,
+    tempLatLng: null,
+    tempMarker: null,
+    activeId: null,
+    rows: [],                       // Supabase 행 캐시
+    rowById: new Map(),             // id → row
+    markerById: new Map(),          // id → L.marker
+    cluster: null,
+  };
+
+  // ── 마커 아이콘 (PNG 그대로 사용) ─────────────────────
+  const ICON_WS = L.icon({
+    iconUrl: "ws.png",
+    iconSize: ICON_SIZE,
+    iconAnchor: [ICON_SIZE[0] / 2, ICON_SIZE[1]],
+    popupAnchor: [0, -ICON_SIZE[1]],
+    tooltipAnchor: [0, -ICON_SIZE[1] + 6],
+  });
+  const ICON_HM = L.icon({
+    iconUrl: "hm.png",
+    iconSize: ICON_SIZE,
+    iconAnchor: [ICON_SIZE[0] / 2, ICON_SIZE[1]],
+    popupAnchor: [0, -ICON_SIZE[1]],
+    tooltipAnchor: [0, -ICON_SIZE[1] + 6],
+  });
+  const ICON_TEMP = L.icon({
+    iconUrl: "ws.png",                // 임시는 일단 ws 아이콘 재사용 + .fp-temp-host 클래스로 톤 변경
+    iconSize: [44, 56],
+    iconAnchor: [22, 54],
+    className: "fp-temp-host",
+  });
+
+  function iconFor(userName) {
+    return userName === "운석" ? ICON_WS : ICON_HM;
+  }
+
+  // ── 지도 초기화 ─────────────────────────────────────
+  const map = L.map("map", {
+    center: DEFAULT_CENTER,
+    zoom: 12,
+    zoomControl: true,
+    preferCanvas: false,
+  });
+
+  if (VWORLD_KEY) {
+    L.tileLayer(
+      `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_KEY}/Base/{z}/{y}/{x}.png`,
+      { attribution: "VWorld", opacity: TILE_OPACITY }
+    ).addTo(map);
+  } else {
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap",
+      opacity: TILE_OPACITY,
+    }).addTo(map);
+  }
+
+  state.cluster = L.markerClusterGroup({
+    maxClusterRadius: 80,
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    zoomToBoundsOnClick: true,
+    disableClusteringAtZoom: 17,
+    chunkedLoading: true,
+  });
+  map.addLayer(state.cluster);
+
+  // ── HTML 헬퍼 ──────────────────────────────────────
+  const $ = (sel) => document.querySelector(sel);
+  const escapeHtml = (s) =>
+    String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  function showToast(msg, ms = 2200) {
+    const t = $("#toast");
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => {
+      t.hidden = true;
+    }, ms);
+  }
+
+  function setStatus(text) {
+    const el = $("#map-status");
+    if (!text) {
+      el.hidden = true;
+      el.textContent = "";
+    } else {
+      el.textContent = text;
+      el.hidden = false;
+    }
+  }
+
+  // ── 사용자 배지 ─────────────────────────────────────
+  function renderUserBadge() {
+    const badge = $("#user-badge");
+    const icon = state.user === "운석" ? "🩵" : "🩷";
+    badge.textContent = `${icon} ${state.user} 으로 활동 중`;
+    badge.classList.toggle("user-hm", state.user === "혜민");
+  }
+
+  // ── 활성 마커 강조 ──────────────────────────────────
+  function setActive(id) {
+    // 이전 강조 제거
+    document
+      .querySelectorAll(".fp-active-host")
+      .forEach((el) => el.classList.remove("fp-active-host"));
+    document.body.classList.remove("fp-spotlight-on");
+
+    state.activeId = id;
+    if (id == null) return;
+
+    const m = state.markerById.get(id);
+    if (!m) return;
+    document.body.classList.add("fp-spotlight-on");
+    const tryAttach = (n = 0) => {
+      const el = m.getElement && m.getElement();
+      if (el) {
+        el.classList.add("fp-active-host");
+      } else if (n < 10) {
+        // 클러스터에 묶여 있어 element 가 아직 없으면 잠깐 후 재시도
+        setTimeout(() => tryAttach(n + 1), 80);
+      }
+    };
+    tryAttach();
+  }
+
+  // ── 팝업 HTML ──────────────────────────────────────
+  function popupHtml(row) {
+    const isWs = row.user_name === "운석";
+    const stars = "⭐".repeat(Number(row.rating || 0));
+    const isOwner = row.user_name === state.user;
+    const userIcon = isWs ? "🩵" : "🩷";
+    const cls = "fp-popup " + (isWs ? "user-ws" : "user-hm");
+
+    const actions = isOwner
+      ? `<div class="actions">
+           <button class="edit" data-action="edit" data-id="${row.id}">✏️ 수정</button>
+           <button class="del"  data-action="delete" data-id="${row.id}">🗑 삭제</button>
+         </div>`
+      : `<div class="ownership-note">
+           본인이 등록한 발자국만 수정·삭제할 수 있어요.
+         </div>`;
+
+    return `<div class="${cls}">
+      <div class="place">${escapeHtml(row.place_name || "")}</div>
+      <div class="meta">${userIcon} <b>${escapeHtml(row.user_name)}</b>
+        · 📅 ${escapeHtml(row.visit_date || "-")} · ${stars || "별점 없음"}
+      </div>
+      <div class="review">${escapeHtml(row.review || "-")}</div>
+      ${actions}
+    </div>`;
+  }
+
+  // ── 마커 추가 / 갱신 / 제거 ──────────────────────────
+  function addMarker(row) {
+    const marker = L.marker([row.lat, row.lng], {
+      icon: iconFor(row.user_name),
+      title: row.place_name || "",
+    });
+    marker.bindTooltip(row.place_name || "", {
+      direction: "top",
+      offset: [0, -8],
+      opacity: 1,
+    });
+    marker.bindPopup(() => popupHtml(row), { maxWidth: 360 });
+
+    marker.on("popupopen", () => setActive(row.id));
+    marker.on("popupclose", () => {
+      // 다른 팝업이 곧바로 열리는 경우는 popupopen 이 다시 강조함
+      if (state.activeId === row.id) setActive(null);
+    });
+
+    state.cluster.addLayer(marker);
+    state.markerById.set(row.id, marker);
+  }
+
+  function clearMarkers() {
+    state.cluster.clearLayers();
+    state.markerById.clear();
+  }
+
+  function rebuildMarkers() {
+    clearMarkers();
+    state.rowById.clear();
+    state.rows.forEach((r) => {
+      state.rowById.set(r.id, r);
+      addMarker(r);
+    });
+  }
+
+  // ── Supabase CRUD ───────────────────────────────────
+  async function loadAll() {
+    setStatus("불러오는 중...");
+    const { data, error } = await supa
+      .from(TABLE)
+      .select("*")
+      .order("id", { ascending: true });
+    setStatus(null);
+    if (error) {
+      showToast(`불러오기 실패: ${error.message}`);
+      console.error(error);
+      return;
+    }
+    state.rows = data || [];
+    rebuildMarkers();
+  }
+
+  async function insertFootprint(payload) {
+    const { data, error } = await supa
+      .from(TABLE)
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw error;
+    state.rows.push(data);
+    state.rowById.set(data.id, data);
+    addMarker(data);
+    return data;
+  }
+
+  async function updateFootprint(id, patch) {
+    const { data, error } = await supa
+      .from(TABLE)
+      .update(patch)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    // 메모리 갱신 + 마커 다시 그리기
+    const idx = state.rows.findIndex((r) => r.id === id);
+    if (idx >= 0) state.rows[idx] = data;
+    state.rowById.set(id, data);
+    const old = state.markerById.get(id);
+    if (old) {
+      state.cluster.removeLayer(old);
+      state.markerById.delete(id);
+    }
+    addMarker(data);
+    return data;
+  }
+
+  async function deleteFootprint(id) {
+    const { error } = await supa.from(TABLE).delete().eq("id", id);
+    if (error) throw error;
+    state.rows = state.rows.filter((r) => r.id !== id);
+    state.rowById.delete(id);
+    const old = state.markerById.get(id);
+    if (old) {
+      state.cluster.removeLayer(old);
+      state.markerById.delete(id);
+    }
+    if (state.activeId === id) setActive(null);
+  }
+
+  // ── 등록 모드 ───────────────────────────────────────
+  function setAddMode(on) {
+    state.isAdding = on;
+    $("#btn-add-mode").hidden = on;
+    $("#add-hint").hidden = !on;
+    if (on) {
+      setStatus("📍 지도를 클릭해 위치를 선택하세요");
+      // 진행 중이던 팝업 닫고 강조 해제
+      map.closePopup();
+      setActive(null);
+    } else {
+      setStatus(null);
+      removeTempMarker();
+    }
+  }
+
+  function removeTempMarker() {
+    if (state.tempMarker) {
+      map.removeLayer(state.tempMarker);
+      state.tempMarker = null;
+    }
+    state.tempLatLng = null;
+  }
+
+  function placeTempMarker(latlng) {
+    removeTempMarker();
+    state.tempLatLng = latlng;
+    state.tempMarker = L.marker(latlng, { icon: ICON_TEMP }).addTo(map);
+    state.tempMarker.bindTooltip("새 발자국 위치", {
+      direction: "top",
+      offset: [0, -8],
+      opacity: 1,
+      permanent: true,
+    });
+  }
+
+  // ── 평점 위젯 ──────────────────────────────────────
+  function bindRating(form) {
+    const rating = form.querySelector(".rating");
+    if (!rating) return;
+    let value = 0;
+    rating.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        value = Number(btn.dataset.value);
+        paint();
+      });
+      btn.addEventListener("mouseenter", () => paint(Number(btn.dataset.value)));
+      btn.addEventListener("mouseleave", () => paint());
+    });
+    function paint(hover = null) {
+      const display = hover ?? value;
+      rating.querySelectorAll("button").forEach((b) => {
+        b.classList.toggle("on", Number(b.dataset.value) <= display);
+      });
+    }
+    rating._get = () => value;
+    rating._set = (v) => {
+      value = Number(v) || 0;
+      paint();
+    };
+  }
+
+  // ── 모달 ────────────────────────────────────────────
+  function openDialog(id) {
+    const dlg = document.getElementById(id);
+    if (!dlg.open) dlg.showModal();
+  }
+  function closeDialog(id) {
+    const dlg = document.getElementById(id);
+    if (dlg.open) dlg.close();
+  }
+
+  // 모든 X / 취소 버튼에 닫기 바인딩
+  document.querySelectorAll("[data-close]").forEach((b) => {
+    b.addEventListener("click", () => closeDialog(b.dataset.close));
+  });
+
+  // ── 추가 모달 ───────────────────────────────────────
+  bindRating($("#form-add"));
+
+  function openAddModal(lat, lng) {
+    const form = $("#form-add");
+    form.reset();
+    form.querySelector(".rating")._set(0);
+    $("#add-coord").textContent = `선택한 위치 · ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    $("#add-error").hidden = true;
+    // 오늘 날짜 기본값
+    const today = new Date().toISOString().slice(0, 10);
+    form.querySelector("input[name='visit_date']").value = today;
+    openDialog("dialog-add");
+    setTimeout(() => form.querySelector("input[name='place_name']").focus(), 80);
+  }
+
+  $("#form-add").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = Object.fromEntries(new FormData(form));
+    const rating = form.querySelector(".rating")._get();
+    const errEl = $("#add-error");
+
+    if (!data.place_name || !data.place_name.trim()) {
+      errEl.textContent = "장소 이름을 입력해 주세요.";
+      errEl.hidden = false;
+      return;
+    }
+    if (!rating) {
+      errEl.textContent = "별점을 선택해 주세요. ⭐";
+      errEl.hidden = false;
+      return;
+    }
+    if (!state.tempLatLng) {
+      errEl.textContent = "지도에서 위치를 먼저 선택해 주세요.";
+      errEl.hidden = false;
+      return;
+    }
+    try {
+      await insertFootprint({
+        user_name: state.user,
+        lat: state.tempLatLng.lat,
+        lng: state.tempLatLng.lng,
+        place_name: data.place_name.trim(),
+        visit_date: data.visit_date,
+        review: data.review || "",
+        rating,
+      });
+      closeDialog("dialog-add");
+      setAddMode(false);
+      showToast("발자국이 저장되었어요!");
+    } catch (err) {
+      console.error(err);
+      errEl.textContent = `저장 실패: ${err.message || err}`;
+      errEl.hidden = false;
+    }
+  });
+
+  // 추가 모달이 X 로 닫혀도 등록 모드는 유지(다시 다른 위치 클릭 가능)
+  document
+    .getElementById("dialog-add")
+    .addEventListener("close", () => {
+      // 임시 마커는 유지 — 다시 클릭하면 좌표가 갱신됨
+    });
+
+  // ── 수정 모달 ───────────────────────────────────────
+  bindRating($("#form-edit"));
+
+  function openEditModal(row) {
+    const form = $("#form-edit");
+    form.reset();
+    form.querySelector(".rating")._set(Number(row.rating) || 0);
+    form.querySelector("input[name='place_name']").value = row.place_name || "";
+    form.querySelector("input[name='visit_date']").value = row.visit_date || "";
+    form.querySelector("textarea[name='review']").value = row.review || "";
+    $("#edit-coord").textContent =
+      `${row.lat.toFixed(5)}, ${row.lng.toFixed(5)} · 작성자: ${row.user_name}`;
+    $("#edit-error").hidden = true;
+    form.dataset.id = row.id;
+    openDialog("dialog-edit");
+  }
+
+  $("#form-edit").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = Object.fromEntries(new FormData(form));
+    const rating = form.querySelector(".rating")._get();
+    const id = form.dataset.id;
+    const errEl = $("#edit-error");
+
+    if (!data.place_name || !data.place_name.trim()) {
+      errEl.textContent = "장소 이름을 입력해 주세요.";
+      errEl.hidden = false;
+      return;
+    }
+    if (!rating) {
+      errEl.textContent = "별점을 선택해 주세요. ⭐";
+      errEl.hidden = false;
+      return;
+    }
+    try {
+      await updateFootprint(id, {
+        place_name: data.place_name.trim(),
+        visit_date: data.visit_date,
+        review: data.review || "",
+        rating,
+      });
+      closeDialog("dialog-edit");
+      showToast("발자국이 수정되었어요!");
+      // 수정 후 해당 마커의 팝업을 다시 열어 즉시 확인할 수 있게
+      const m = state.markerById.get(id) || state.markerById.get(Number(id));
+      if (m) m.openPopup();
+    } catch (err) {
+      console.error(err);
+      errEl.textContent = `수정 실패: ${err.message || err}`;
+      errEl.hidden = false;
+    }
+  });
+
+  // ── 삭제 모달 ───────────────────────────────────────
+  let pendingDeleteId = null;
+  function openDeleteModal(row) {
+    pendingDeleteId = row.id;
+    $("#delete-msg").textContent = `'${row.place_name || "-"}' 발자국을 삭제할까요?`;
+    openDialog("dialog-delete");
+  }
+
+  $("#btn-confirm-delete").addEventListener("click", async () => {
+    if (pendingDeleteId == null) return;
+    try {
+      await deleteFootprint(pendingDeleteId);
+      closeDialog("dialog-delete");
+      showToast("삭제되었어요.");
+    } catch (err) {
+      console.error(err);
+      showToast(`삭제 실패: ${err.message || err}`);
+    } finally {
+      pendingDeleteId = null;
+    }
+  });
+
+  // ── 팝업 안의 수정/삭제 버튼 위임 처리 ───────────────
+  // Leaflet 은 팝업 콘텐츠가 동적이라 위임이 가장 안전.
+  document.body.addEventListener("click", (e) => {
+    const btn = e.target.closest(".fp-popup .actions button");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const action = btn.dataset.action;
+    const row =
+      state.rowById.get(id) ||
+      state.rowById.get(Number(id)) ||
+      state.rowById.get(String(id));
+    if (!row) return;
+    if (row.user_name !== state.user) {
+      showToast("본인이 등록한 발자국만 수정·삭제할 수 있어요.");
+      return;
+    }
+    if (action === "edit") {
+      map.closePopup();
+      openEditModal(row);
+    } else if (action === "delete") {
+      map.closePopup();
+      openDeleteModal(row);
+    }
+  });
+
+  // ── 지도 클릭 (등록 모드일 때만 좌표 수집) ────────────
+  map.on("click", (e) => {
+    if (!state.isAdding) return;
+    placeTempMarker(e.latlng);
+    openAddModal(e.latlng.lat, e.latlng.lng);
+  });
+
+  // ── 좌측 메뉴 이벤트 ────────────────────────────────
+  document.querySelectorAll("input[name='user']").forEach((r) => {
+    r.addEventListener("change", () => {
+      state.user = r.value;
+      renderUserBadge();
+      // 현재 열려 있는 팝업이 있으면 권한 변화 반영을 위해 다시 그리기
+      if (state.activeId != null) {
+        const m = state.markerById.get(state.activeId);
+        if (m && m.isPopupOpen()) {
+          m.setPopupContent(popupHtml(state.rowById.get(state.activeId)));
+        }
+      }
+    });
+  });
+
+  $("#btn-add-mode").addEventListener("click", () => setAddMode(true));
+  $("#btn-cancel-add").addEventListener("click", () => {
+    setAddMode(false);
+    closeDialog("dialog-add");
+  });
+
+  // ── 첫 페인트 ──────────────────────────────────────
+  renderUserBadge();
+  loadAll();
+
+  // ── ESC 로 등록 모드 종료 ──────────────────────────
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && state.isAdding) {
+      setAddMode(false);
+    }
+  });
+})();

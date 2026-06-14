@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>우리 발자국 👣</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Gowun+Batang:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    rel="stylesheet"
+  />
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-title">👣 우리 발자국</div>
+      <div class="brand-sub">우리가 남긴 발자국</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- 좌측 메뉴 -->
+    <aside class="menu">
+      <section>
+        <div class="label">나는 누구?</div>
+        <div class="user-radio" role="radiogroup" aria-label="유저 선택">
+          <label>
+            <input type="radio" name="user" value="운석" checked />
+            <span>운석</span>
+          </label>
+          <label>
+            <input type="radio" name="user" value="혜민" />
+            <span>혜민</span>
+          </label>
+        </div>
+        <div id="user-badge" class="user-badge"></div>
+      </section>
+
+      <hr class="divider" />
+
+      <section>
+        <button id="btn-add-mode" class="btn primary block">📍 새 발자국 등록</button>
+        <div id="add-hint" class="add-hint" hidden>
+          🗺️ 지도를 클릭해서 위치를 선택해 주세요.<br />
+          클릭한 자리에서 입력 팝업이 열려요.
+          <button id="btn-cancel-add" class="btn block" style="margin-top: 8px;">
+            ❌ 등록 모드 종료
+          </button>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <p class="fp-tip">
+        🛈 지도 위의 어피치나 튜브를 클릭하면 정보 팝업이 뜨고, 본인이 등록한 발자국은
+        거기서 수정·삭제할 수 있어요.
+      </p>
+    </aside>
+
+    <!-- 우측 지도 -->
+    <main class="map-area">
+      <div id="map"></div>
+      <div id="map-status" class="map-status" hidden></div>
+    </main>
+  </div>
+
+  <!-- 추가 모달 -->
+  <dialog id="dialog-add" class="fp-dialog">
+    <form id="form-add" method="dialog">
+      <header class="fp-dialog-head">
+        <h2>📍 새 발자국 등록</h2>
+        <button type="button" class="x" data-close="dialog-add" aria-label="닫기">×</button>
+      </header>
+      <p id="add-coord" class="caption"></p>
+
+      <label>
+        장소 이름 *
+        <input type="text" name="place_name" maxlength="80" required placeholder="예: 산으로 간 고등어" />
+      </label>
+      <label>
+        방문 일자 *
+        <input type="date" name="visit_date" required />
+      </label>
+      <label>
+        한 줄 리뷰 <span class="hint">(50자 이내)</span>
+        <textarea name="review" maxlength="50" rows="2" placeholder="예: 김지갑 더 가져올걸!"></textarea>
+      </label>
+
+      <div class="rating-block">
+        <div class="label">⭐ 별점 *</div>
+        <div class="rating" data-name="rating" role="radiogroup" aria-label="별점 선택">
+          <button type="button" data-value="1">★</button>
+          <button type="button" data-value="2">★</button>
+          <button type="button" data-value="3">★</button>
+          <button type="button" data-value="4">★</button>
+          <button type="button" data-value="5">★</button>
+        </div>
+      </div>
+
+      <div class="error-msg" id="add-error" hidden></div>
+
+      <footer class="fp-dialog-foot">
+        <button type="button" class="btn" data-close="dialog-add">취소</button>
+        <button type="submit" class="btn primary">💾 저장</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 수정 모달 -->
+  <dialog id="dialog-edit" class="fp-dialog">
+    <form id="form-edit" method="dialog">
+      <header class="fp-dialog-head">
+        <h2>✏️ 발자국 수정</h2>
+        <button type="button" class="x" data-close="dialog-edit" aria-label="닫기">×</button>
+      </header>
+      <p id="edit-coord" class="caption"></p>
+
+      <label>
+        장소 이름 *
+        <input type="text" name="place_name" maxlength="80" required />
+      </label>
+      <label>
+        방문 일자 *
+        <input type="date" name="visit_date" required />
+      </label>
+      <label>
+        한 줄 리뷰 <span class="hint">(50자 이내)</span>
+        <textarea name="review" maxlength="50" rows="2"></textarea>
+      </label>
+
+      <div class="rating-block">
+        <div class="label">⭐ 별점 *</div>
+        <div class="rating" data-name="rating" role="radiogroup" aria-label="별점 선택">
+          <button type="button" data-value="1">★</button>
+          <button type="button" data-value="2">★</button>
+          <button type="button" data-value="3">★</button>
+          <button type="button" data-value="4">★</button>
+          <button type="button" data-value="5">★</button>
+        </div>
+      </div>
+
+      <div class="error-msg" id="edit-error" hidden></div>
+
+      <footer class="fp-dialog-foot">
+        <button type="button" class="btn" data-close="dialog-edit">취소</button>
+        <button type="submit" class="btn primary">💾 저장</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 삭제 모달 -->
+  <dialog id="dialog-delete" class="fp-dialog small">
+    <header class="fp-dialog-head">
+      <h2>🗑 발자국 삭제</h2>
+      <button type="button" class="x" data-close="dialog-delete" aria-label="닫기">×</button>
+    </header>
+    <p id="delete-msg"></p>
+    <p class="hint">이 작업은 되돌릴 수 없어요.</p>
+    <footer class="fp-dialog-foot">
+      <button type="button" class="btn" data-close="dialog-delete">취소</button>
+      <button type="button" class="btn danger" id="btn-confirm-delete">✅ 삭제</button>
+    </footer>
+  </dialog>
+
+  <!-- 토스트 -->
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
