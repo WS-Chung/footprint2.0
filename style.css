@@ -31,7 +31,8 @@
 html, body {
   margin: 0;
   padding: 0;
-  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-family: "Quicksand", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-weight: 500;
   color: var(--text);
   background:
     var(--heart-pattern) repeat,
@@ -48,16 +49,15 @@ html, body {
   margin: 0 auto;
 }
 .brand-title {
-  font-family: "Caveat", "Gowun Batang", serif;
-  font-weight: 700;
-  font-size: 1.7rem;
+  font-family: "Jua", "Quicksand", "Pretendard", sans-serif;
+  font-size: 1.85rem;
   line-height: 1.1;
   letter-spacing: 0.5px;
 }
 .brand-sub {
-  font-family: "Gowun Batang", serif;
+  font-family: "Jua", "Quicksand", "Pretendard", sans-serif;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   margin-top: -2px;
 }
 
@@ -129,8 +129,8 @@ html, body {
   padding: 10px 14px;
   border-radius: 14px;
   background: var(--info-bg);
-  font-family: "Gowun Batang", serif;
-  font-weight: 700;
+  font-family: "Jua", "Quicksand", "Pretendard", sans-serif;
+  font-size: 1rem;
   letter-spacing: 0.2px;
   border-left: 4px solid var(--accent-ws);
 }
@@ -145,8 +145,9 @@ html, body {
 }
 
 .fp-tip {
-  font-family: "Gowun Batang", serif;
-  font-size: 0.88rem;
+  font-family: "Quicksand", "Pretendard", "Noto Sans KR", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 500;
   color: var(--muted);
   line-height: 1.55;
   margin: 0;
@@ -260,8 +261,8 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
 }
 .fp-dialog-head h2 {
   margin: 0;
-  font-family: "Gowun Batang", serif;
-  font-size: 1.1rem;
+  font-family: "Jua", "Quicksand", "Pretendard", sans-serif;
+  font-size: 1.2rem;
   letter-spacing: 0.5px;
 }
 .fp-dialog-head .x {
@@ -312,18 +313,19 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
 /* ─── Leaflet 마커 / 툴팁 ────────────────────────────── */
 .leaflet-tooltip,
 .leaflet-tooltip-pane .leaflet-tooltip {
-  font-family: "Caveat", "Gowun Batang", "Noto Sans KR", serif !important;
-  font-size: 22px !important;
-  font-weight: 700 !important;
+  font-family: "Jua", "Quicksand", "Pretendard", "Noto Sans KR", sans-serif !important;
+  font-size: 19px !important;
+  font-weight: 400 !important;
   line-height: 1.2 !important;
   color: #3F3328 !important;
-  padding: 8px 14px !important;
+  padding: 7px 13px !important;
   background: #FFFDFA !important;
   border: 1.5px solid #E5C9B6 !important;
   border-radius: 14px !important;
   box-shadow: 0 4px 14px rgba(120, 86, 60, 0.14) !important;
   white-space: nowrap !important;
   opacity: 1 !important;
+  letter-spacing: 0.2px !important;
 }
 .leaflet-tooltip-top:before {
   border-top-color: #E5C9B6 !important;
@@ -376,19 +378,20 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
   background: #FFFDFA !important;
 }
 .leaflet-popup-content {
-  margin: 14px 16px !important;
+  margin: 17px 19px 14px 16px !important;
   min-width: 240px;
   color: var(--text);
+  font-family: "Quicksand", "Pretendard", "Noto Sans KR", sans-serif;
 }
 .leaflet-popup-close-button {
   font-size: 22px !important;
   color: var(--muted) !important;
-  padding: 4px 8px !important;
+  padding: 7px 11px 0 0 !important;
 }
 
 .fp-popup .place {
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-family: "Jua", "Quicksand", "Pretendard", sans-serif;
+  font-size: 1.18rem;
   margin-bottom: 4px;
 }
 .fp-popup .meta {
