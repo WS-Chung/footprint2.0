@@ -49,15 +49,16 @@ html, body {
   margin: 0 auto;
 }
 .brand-title {
-  font-family: "Jua", "Quicksand", "Pretendard", sans-serif;
-  font-size: 1.85rem;
+  font-family: "Hi Melody", "Quicksand", "Pretendard", sans-serif;
+  font-size: 2rem;
+  font-weight: 400;
   line-height: 1.1;
   letter-spacing: 0.5px;
 }
 .brand-sub {
-  font-family: "Jua", "Quicksand", "Pretendard", sans-serif;
+  font-family: "Hi Melody", "Quicksand", "Pretendard", sans-serif;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   margin-top: -2px;
 }
 
@@ -129,8 +130,8 @@ html, body {
   padding: 10px 14px;
   border-radius: 14px;
   background: var(--info-bg);
-  font-family: "Jua", "Quicksand", "Pretendard", sans-serif;
-  font-size: 1rem;
+  font-family: "Hi Melody", "Quicksand", "Pretendard", sans-serif;
+  font-size: 1.1rem;
   letter-spacing: 0.2px;
   border-left: 4px solid var(--accent-ws);
 }
@@ -261,8 +262,9 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
 }
 .fp-dialog-head h2 {
   margin: 0;
-  font-family: "Jua", "Quicksand", "Pretendard", sans-serif;
-  font-size: 1.2rem;
+  font-family: "Hi Melody", "Quicksand", "Pretendard", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 400;
   letter-spacing: 0.5px;
 }
 .fp-dialog-head .x {
@@ -313,12 +315,12 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
 /* ─── Leaflet 마커 / 툴팁 ────────────────────────────── */
 .leaflet-tooltip,
 .leaflet-tooltip-pane .leaflet-tooltip {
-  font-family: "Jua", "Quicksand", "Pretendard", "Noto Sans KR", sans-serif !important;
-  font-size: 19px !important;
+  font-family: "Hi Melody", "Quicksand", "Pretendard", "Noto Sans KR", sans-serif !important;
+  font-size: 16px !important;
   font-weight: 400 !important;
   line-height: 1.2 !important;
   color: #3F3328 !important;
-  padding: 7px 13px !important;
+  padding: 6px 12px !important;
   background: #FFFDFA !important;
   border: 1.5px solid #E5C9B6 !important;
   border-radius: 14px !important;
@@ -326,6 +328,7 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
   white-space: nowrap !important;
   opacity: 1 !important;
   letter-spacing: 0.2px !important;
+  pointer-events: none !important;
 }
 .leaflet-tooltip-top:before {
   border-top-color: #E5C9B6 !important;
@@ -390,8 +393,9 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
 }
 
 .fp-popup .place {
-  font-family: "Jua", "Quicksand", "Pretendard", sans-serif;
-  font-size: 1.18rem;
+  font-family: "Hi Melody", "Quicksand", "Pretendard", sans-serif;
+  font-size: 1.4rem;
+  font-weight: 400;
   margin-bottom: 4px;
 }
 .fp-popup .meta {

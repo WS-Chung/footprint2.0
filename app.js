@@ -99,6 +99,13 @@
   });
   map.addLayer(state.cluster);
 
+  // 클러스터 차원에서도 안전망. 빠른 hover 이동 때 잔류 툴팁을 모두 제거한다.
+  state.cluster.on("mouseout", () => {
+    state.cluster.eachLayer((m) => {
+      if (m.closeTooltip) m.closeTooltip();
+    });
+  });
+
   // ── HTML 헬퍼 ──────────────────────────────────────
   const $ = (sel) => document.querySelector(sel);
   const escapeHtml = (s) =>
@@ -201,12 +208,20 @@
       direction: "top",
       offset: [0, -8],
       opacity: 1,
+      permanent: false,
+      sticky: false,
+      interactive: false,
     });
     marker.bindPopup(() => popupHtml(row), { maxWidth: 360 });
 
-    marker.on("popupopen", () => setActive(row.id));
+    // 마우스를 떼는 즉시 툴팁이 사라지도록 명시 처리. 가끔 마커 사이를 빠르게
+    // 오갈 때 툴팁이 두 개 보이는 현상을 방지한다.
+    marker.on("mouseout", () => marker.closeTooltip());
+    marker.on("popupopen", () => {
+      marker.closeTooltip();   // 팝업과 툴팁이 함께 뜨지 않게
+      setActive(row.id);
+    });
     marker.on("popupclose", () => {
-      // 다른 팝업이 곧바로 열리는 경우는 popupopen 이 다시 강조함
       if (state.activeId === row.id) setActive(null);
     });
 
