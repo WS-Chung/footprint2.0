@@ -27,6 +27,10 @@
 
   // ── 상수 / 상태 ─────────────────────────────────────
   const TABLE = "footprints";
+  const BUCKET = "footprint-images";
+  const MAX_IMAGES = 4;
+  const COMPRESS_SIZE = 400;       // 정사각 400px
+  const COMPRESS_QUALITY = 0.85;   // JPEG quality
   const DEFAULT_CENTER = [37.34541, 127.08995];
   const ICON_SIZE = [40, 52];
   const TILE_OPACITY = 0.5;
@@ -42,6 +46,12 @@
     markerById: new Map(),          // id → L.marker
     cluster: null,
   };
+
+  // 모달 안 이미지 상태 (Add / Edit 각각)
+  // editItems: { type: 'existing' | 'pending', url?, file?, objectUrl? }
+  let addPendingFiles = [];
+  let editItems = [];
+  let editRemovedUrls = [];
 
   // ── 마커 아이콘 (PNG 그대로 사용) ─────────────────────
   const ICON_WS = L.icon({
@@ -116,6 +126,93 @@
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
 
+  // ── 이미지 URL 직렬화 / 역직렬화 (image_url 콤마 구분) ─
+  function parseImages(s) {
+    if (!s) return [];
+    return String(s)
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  }
+  function joinImages(arr) {
+    return (arr || []).filter(Boolean).join(",");
+  }
+
+  // ── Storage 헬퍼 ───────────────────────────────────
+  function extractStoragePath(publicUrl) {
+    if (!publicUrl) return null;
+    const m = publicUrl.match(/\/object\/public\/footprint-images\/(.+?)(\?.*)?$/);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+
+  async function compressToSquare(file, size = COMPRESS_SIZE, quality = COMPRESS_QUALITY) {
+    const objectUrl = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = reject;
+        i.src = objectUrl;
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      // 원본이 정사각이 아니어도 가운데를 잘라 정사각으로
+      const sourceSize = Math.min(img.width, img.height);
+      const sourceX = (img.width - sourceSize) / 2;
+      const sourceY = (img.height - sourceSize) / 2;
+      ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", quality),
+      );
+      return blob;
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  async function uploadCompressed(footprintId, file) {
+    const blob = await compressToSquare(file);
+    const filename =
+      Date.now().toString(36) + "-" +
+      Math.random().toString(36).slice(2, 8) + ".jpg";
+    const path = `${footprintId}/${filename}`;
+    const { error } = await supa.storage.from(BUCKET).upload(path, blob, {
+      contentType: "image/jpeg",
+      cacheControl: "3600",
+      upsert: false,
+    });
+    if (error) throw error;
+    const { data } = supa.storage.from(BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  async function deleteImagesFromStorage(urls) {
+    const paths = (urls || [])
+      .map(extractStoragePath)
+      .filter(Boolean);
+    if (!paths.length) return;
+    try {
+      await supa.storage.from(BUCKET).remove(paths);
+    } catch (e) {
+      console.warn("이미지 삭제 일부 실패 (무시 가능):", e);
+    }
+  }
+
+  async function deleteAllImagesForFootprint(id) {
+    try {
+      const { data, error } = await supa.storage.from(BUCKET).list(`${id}`, {
+        limit: 100,
+      });
+      if (error || !data || !data.length) return;
+      const paths = data.map((f) => `${id}/${f.name}`);
+      await supa.storage.from(BUCKET).remove(paths);
+    } catch (e) {
+      console.warn("발자국 폴더 정리 일부 실패 (무시 가능):", e);
+    }
+  }
+
   function showToast(msg, ms = 2200) {
     const t = $("#toast");
     t.textContent = msg;
@@ -179,6 +276,18 @@
     const userIcon = isWs ? "🩵" : "🩷";
     const cls = "fp-popup " + (isWs ? "user-ws" : "user-hm");
 
+    const images = parseImages(row.image_url);
+    const imagesHtml = images.length
+      ? `<div class="popup-images">
+           ${images
+             .map(
+               (u) =>
+                 `<img class="popup-thumb" src="${escapeHtml(u)}" alt="" loading="lazy" />`,
+             )
+             .join("")}
+         </div>`
+      : "";
+
     const actions = isOwner
       ? `<div class="actions">
            <button class="edit" data-action="edit" data-id="${row.id}">✏️ 수정</button>
@@ -194,6 +303,7 @@
         · 📅 ${escapeHtml(row.visit_date || "-")} · ${stars || "별점 없음"}
       </div>
       <div class="review">${escapeHtml(row.review || "-")}</div>
+      ${imagesHtml}
       ${actions}
     </div>`;
   }
@@ -297,6 +407,8 @@
   async function deleteFootprint(id) {
     const { error } = await supa.from(TABLE).delete().eq("id", id);
     if (error) throw error;
+    // 발자국 삭제 후 Storage 폴더 통째로 정리
+    deleteAllImagesForFootprint(id);
     state.rows = state.rows.filter((r) => r.id !== id);
     state.rowById.delete(id);
     const old = state.markerById.get(id);
@@ -387,13 +499,59 @@
   // ── 추가 모달 ───────────────────────────────────────
   bindRating($("#form-add"));
 
+  function renderAddImageGrid() {
+    const grid = $("#add-image-grid");
+    grid.innerHTML = "";
+    addPendingFiles.forEach((f, i) => {
+      // 미리보기 — 압축 전 원본 ObjectURL
+      const url = URL.createObjectURL(f);
+      const div = document.createElement("div");
+      div.className = "thumb";
+      div.innerHTML = `<img src="${url}" alt="" />
+        <button type="button" class="rm" data-index="${i}" aria-label="제거">×</button>`;
+      grid.appendChild(div);
+    });
+    $("#add-image-add-btn").disabled = addPendingFiles.length >= MAX_IMAGES;
+  }
+
+  $("#add-image-add-btn").addEventListener("click", () => {
+    $("#add-image-input").click();
+  });
+  $("#add-image-input").addEventListener("change", (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    for (const f of files) {
+      if (!f.type.startsWith("image/")) {
+        showToast(`이미지 파일만 첨부할 수 있어요 — ${f.name}`);
+        continue;
+      }
+      if (addPendingFiles.length >= MAX_IMAGES) {
+        showToast(`최대 ${MAX_IMAGES}장까지 첨부할 수 있어요.`);
+        break;
+      }
+      addPendingFiles.push(f);
+    }
+    renderAddImageGrid();
+  });
+  $("#add-image-grid").addEventListener("click", (e) => {
+    const rm = e.target.closest(".rm");
+    if (rm) {
+      addPendingFiles.splice(Number(rm.dataset.index), 1);
+      renderAddImageGrid();
+      return;
+    }
+    const img = e.target.closest("img");
+    if (img) openLightbox(img.src);
+  });
+
   function openAddModal(lat, lng) {
     const form = $("#form-add");
     form.reset();
     form.querySelector(".rating")._set(0);
+    addPendingFiles = [];
+    renderAddImageGrid();
     $("#add-coord").textContent = `선택한 위치 · ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     $("#add-error").hidden = true;
-    // 오늘 날짜 기본값
     const today = new Date().toISOString().slice(0, 10);
     form.querySelector("input[name='visit_date']").value = today;
     openDialog("dialog-add");
@@ -406,6 +564,7 @@
     const data = Object.fromEntries(new FormData(form));
     const rating = form.querySelector(".rating")._get();
     const errEl = $("#add-error");
+    const submitBtn = $("#add-submit");
 
     if (!data.place_name || !data.place_name.trim()) {
       errEl.textContent = "장소 이름을 입력해 주세요.";
@@ -422,8 +581,11 @@
       errEl.hidden = false;
       return;
     }
+    submitBtn.classList.add("is-busy");
+    submitBtn.textContent = "💾 저장 중...";
     try {
-      await insertFootprint({
+      // 1) DB INSERT — 우선 이미지 없이 행 생성 (id 확보)
+      const newRow = await insertFootprint({
         user_name: state.user,
         lat: state.tempLatLng.lat,
         lng: state.tempLatLng.lng,
@@ -431,14 +593,29 @@
         visit_date: data.visit_date,
         review: data.review || "",
         rating,
+        image_url: "",
       });
+
+      // 2) 이미지 압축 + 업로드
+      if (addPendingFiles.length) {
+        submitBtn.textContent = "📷 이미지 업로드 중...";
+        const urls = await Promise.all(
+          addPendingFiles.map((f) => uploadCompressed(newRow.id, f)),
+        );
+        await updateFootprint(newRow.id, { image_url: joinImages(urls) });
+      }
+
       closeDialog("dialog-add");
       setAddMode(false);
+      addPendingFiles = [];
       showToast("발자국이 저장되었어요!");
     } catch (err) {
       console.error(err);
       errEl.textContent = `저장 실패: ${err.message || err}`;
       errEl.hidden = false;
+    } finally {
+      submitBtn.classList.remove("is-busy");
+      submitBtn.textContent = "💾 저장";
     }
   });
 
@@ -452,6 +629,62 @@
   // ── 수정 모달 ───────────────────────────────────────
   bindRating($("#form-edit"));
 
+  function renderEditImageGrid() {
+    const grid = $("#edit-image-grid");
+    grid.innerHTML = "";
+    editItems.forEach((it, i) => {
+      const div = document.createElement("div");
+      div.className = "thumb";
+      const src = it.type === "existing" ? it.url : it.objectUrl;
+      div.innerHTML = `<img src="${escapeHtml(src)}" alt="" />
+        <button type="button" class="rm" data-index="${i}" aria-label="제거">×</button>`;
+      grid.appendChild(div);
+    });
+    $("#edit-image-add-btn").disabled = editItems.length >= MAX_IMAGES;
+  }
+
+  $("#edit-image-add-btn").addEventListener("click", () => {
+    $("#edit-image-input").click();
+  });
+  $("#edit-image-input").addEventListener("change", (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    for (const f of files) {
+      if (!f.type.startsWith("image/")) {
+        showToast(`이미지 파일만 첨부할 수 있어요 — ${f.name}`);
+        continue;
+      }
+      if (editItems.length >= MAX_IMAGES) {
+        showToast(`최대 ${MAX_IMAGES}장까지 첨부할 수 있어요.`);
+        break;
+      }
+      editItems.push({
+        type: "pending",
+        file: f,
+        objectUrl: URL.createObjectURL(f),
+      });
+    }
+    renderEditImageGrid();
+  });
+  $("#edit-image-grid").addEventListener("click", (e) => {
+    const rm = e.target.closest(".rm");
+    if (rm) {
+      const i = Number(rm.dataset.index);
+      const item = editItems[i];
+      if (item && item.type === "existing") {
+        editRemovedUrls.push(item.url);
+      }
+      if (item && item.type === "pending" && item.objectUrl) {
+        URL.revokeObjectURL(item.objectUrl);
+      }
+      editItems.splice(i, 1);
+      renderEditImageGrid();
+      return;
+    }
+    const img = e.target.closest("img");
+    if (img) openLightbox(img.src);
+  });
+
   function openEditModal(row) {
     const form = $("#form-edit");
     form.reset();
@@ -463,6 +696,13 @@
       `${row.lat.toFixed(5)}, ${row.lng.toFixed(5)} · 작성자: ${row.user_name}`;
     $("#edit-error").hidden = true;
     form.dataset.id = row.id;
+    // 이미지 상태 초기화
+    editItems = parseImages(row.image_url).map((url) => ({
+      type: "existing",
+      url,
+    }));
+    editRemovedUrls = [];
+    renderEditImageGrid();
     openDialog("dialog-edit");
   }
 
@@ -473,6 +713,7 @@
     const rating = form.querySelector(".rating")._get();
     const id = form.dataset.id;
     const errEl = $("#edit-error");
+    const submitBtn = $("#edit-submit");
 
     if (!data.place_name || !data.place_name.trim()) {
       errEl.textContent = "장소 이름을 입력해 주세요.";
@@ -484,22 +725,55 @@
       errEl.hidden = false;
       return;
     }
+    if (editItems.length > MAX_IMAGES) {
+      errEl.textContent = `사진은 최대 ${MAX_IMAGES}장까지 가능합니다.`;
+      errEl.hidden = false;
+      return;
+    }
+
+    submitBtn.classList.add("is-busy");
+    submitBtn.textContent = "💾 저장 중...";
     try {
+      // 1) 새 이미지 업로드
+      const pending = editItems.filter((x) => x.type === "pending");
+      let newUrls = [];
+      if (pending.length) {
+        submitBtn.textContent = "📷 이미지 업로드 중...";
+        newUrls = await Promise.all(
+          pending.map((p) => uploadCompressed(id, p.file)),
+        );
+      }
+      // 2) 최종 image_url 결정 (남긴 기존 + 신규)
+      const keptUrls = editItems
+        .filter((x) => x.type === "existing")
+        .map((x) => x.url);
+      const finalImageUrl = joinImages([...keptUrls, ...newUrls]);
+
+      // 3) DB 업데이트
       await updateFootprint(id, {
         place_name: data.place_name.trim(),
         visit_date: data.visit_date,
         review: data.review || "",
         rating,
+        image_url: finalImageUrl,
       });
+
+      // 4) 제거된 기존 이미지를 Storage 에서 삭제
+      if (editRemovedUrls.length) {
+        deleteImagesFromStorage(editRemovedUrls);
+      }
+
       closeDialog("dialog-edit");
       showToast("발자국이 수정되었어요!");
-      // 수정 후 해당 마커의 팝업을 다시 열어 즉시 확인할 수 있게
       const m = state.markerById.get(id) || state.markerById.get(Number(id));
       if (m) m.openPopup();
     } catch (err) {
       console.error(err);
       errEl.textContent = `수정 실패: ${err.message || err}`;
       errEl.hidden = false;
+    } finally {
+      submitBtn.classList.remove("is-busy");
+      submitBtn.textContent = "💾 저장";
     }
   });
 
@@ -525,9 +799,15 @@
     }
   });
 
-  // ── 팝업 안의 수정/삭제 버튼 위임 처리 ───────────────
+  // ── 팝업 안의 수정/삭제 버튼 / 썸네일 위임 처리 ──────
   // Leaflet 은 팝업 콘텐츠가 동적이라 위임이 가장 안전.
   document.body.addEventListener("click", (e) => {
+    // 팝업 안 썸네일 → 라이트박스
+    const thumb = e.target.closest(".popup-thumb");
+    if (thumb) {
+      openLightbox(thumb.getAttribute("src"));
+      return;
+    }
     const btn = e.target.closest(".fp-popup .actions button");
     if (!btn) return;
     const id = btn.dataset.id;
@@ -549,6 +829,21 @@
       openDeleteModal(row);
     }
   });
+
+  // ── 라이트박스 ──────────────────────────────────────
+  const lightbox = $("#lightbox");
+  const lightboxImg = $("#lightbox-img");
+  function openLightbox(src) {
+    if (!src) return;
+    lightboxImg.src = src;
+    if (!lightbox.open) lightbox.showModal();
+  }
+  function closeLightbox() {
+    if (lightbox.open) lightbox.close();
+    lightboxImg.src = "";
+  }
+  lightbox.addEventListener("click", () => closeLightbox());
+  // 모달 안 썸네일 클릭은 그리드 컨테이너의 click 위임에서 openLightbox 를 호출.
 
   // ── 지도 클릭 (등록 모드일 때만 좌표 수집) ────────────
   map.on("click", (e) => {
@@ -582,10 +877,12 @@
   renderUserBadge();
   loadAll();
 
-  // ── ESC 로 등록 모드 종료 ──────────────────────────
+  // ── ESC 처리 ──────────────────────────────────────
+  // 다이얼로그(라이트박스/추가/수정/삭제) 가 열려 있으면 native ESC 가 알아서 닫는다.
+  // 그 외에 등록 모드만 활성일 때는 ESC 로 모드 종료.
   window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && state.isAdding) {
-      setAddMode(false);
-    }
+    if (e.key !== "Escape") return;
+    if (document.querySelector("dialog[open]")) return;
+    if (state.isAdding) setAddMode(false);
   });
 })();

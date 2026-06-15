@@ -458,6 +458,130 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
   color: var(--muted);
 }
 
+/* ─── Image upload (모달 안 그리드 / 썸네일) ─────────── */
+.image-block {
+  margin: 8px 0 12px 0;
+}
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.image-grid:empty { display: none; }
+.thumb {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--info-bg);
+  border: 1px solid var(--card-border);
+}
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
+}
+.thumb .rm {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(63, 51, 40, 0.78);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.thumb .rm:hover { background: rgba(63, 51, 40, 0.95); }
+
+/* ─── 팝업 안 작은 썸네일 ────────────────────────────── */
+.popup-images {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.popup-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: zoom-in;
+  border: 1px solid var(--card-border);
+  background: var(--info-bg);
+  transition: transform 100ms ease;
+}
+.popup-thumb:hover {
+  transform: scale(1.06);
+}
+
+/* ─── Lightbox (큰 이미지 보기) ──────────────────────── */
+dialog.lightbox {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(20, 14, 10, 0.88);
+  cursor: zoom-out;
+  overflow: hidden;
+}
+dialog.lightbox[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fp-lightbox-fade 120ms ease-out;
+}
+dialog.lightbox::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+@keyframes fp-lightbox-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+dialog.lightbox img {
+  max-width: 90vw;
+  max-height: 88vh;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  background: #fff;
+}
+.lightbox-close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.16);
+  border: none;
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-close:hover { background: rgba(255, 255, 255, 0.28); }
+
+/* 저장/업로드 진행 중 비활성 */
+.btn.is-busy {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
 /* ─── 모바일 ──────────────────────────────────────────── */
 @media (max-width: 768px) {
   .layout {

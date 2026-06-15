@@ -112,6 +112,13 @@
         <textarea name="review" maxlength="50" rows="2" placeholder="예: 김지갑 더 가져올걸!"></textarea>
       </label>
 
+      <div class="image-block">
+        <div class="label">📷 사진 <span class="hint">(최대 4장 · 정사각 400px 자동 압축)</span></div>
+        <div class="image-grid" id="add-image-grid"></div>
+        <input type="file" id="add-image-input" accept="image/*" multiple hidden />
+        <button type="button" class="btn block" id="add-image-add-btn">+ 사진 추가</button>
+      </div>
+
       <div class="rating-block">
         <div class="label">⭐ 별점 *</div>
         <div class="rating" data-name="rating" role="radiogroup" aria-label="별점 선택">
@@ -127,7 +134,7 @@
 
       <footer class="fp-dialog-foot">
         <button type="button" class="btn" data-close="dialog-add">취소</button>
-        <button type="submit" class="btn primary">💾 저장</button>
+        <button type="submit" class="btn primary" id="add-submit">💾 저장</button>
       </footer>
     </form>
   </dialog>
@@ -154,6 +161,13 @@
         <textarea name="review" maxlength="50" rows="2"></textarea>
       </label>
 
+      <div class="image-block">
+        <div class="label">📷 사진 <span class="hint">(최대 4장 · 정사각 400px 자동 압축)</span></div>
+        <div class="image-grid" id="edit-image-grid"></div>
+        <input type="file" id="edit-image-input" accept="image/*" multiple hidden />
+        <button type="button" class="btn block" id="edit-image-add-btn">+ 사진 추가</button>
+      </div>
+
       <div class="rating-block">
         <div class="label">⭐ 별점 *</div>
         <div class="rating" data-name="rating" role="radiogroup" aria-label="별점 선택">
@@ -169,7 +183,7 @@
 
       <footer class="fp-dialog-foot">
         <button type="button" class="btn" data-close="dialog-edit">취소</button>
-        <button type="submit" class="btn primary">💾 저장</button>
+        <button type="submit" class="btn primary" id="edit-submit">💾 저장</button>
       </footer>
     </form>
   </dialog>
@@ -190,6 +204,12 @@
 
   <!-- 토스트 -->
   <div id="toast" class="toast" hidden></div>
+
+  <!-- 라이트박스 (썸네일 클릭 시 큰 이미지) — dialog 로 만들어 모달 위에도 뜨게 -->
+  <dialog id="lightbox" class="lightbox" aria-label="사진 크게 보기">
+    <button type="button" class="lightbox-close" aria-label="닫기">×</button>
+    <img id="lightbox-img" src="" alt="" />
+  </dialog>
 
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
