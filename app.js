@@ -287,10 +287,16 @@
 
   // ── 활성 마커 강조 ──────────────────────────────────
   function setActive(id) {
-    // 이전 강조 제거
+    // 이전 강조 제거 (베이스 + 사용자별 클래스 모두)
     document
       .querySelectorAll(".fp-active-host")
-      .forEach((el) => el.classList.remove("fp-active-host"));
+      .forEach((el) =>
+        el.classList.remove(
+          "fp-active-host",
+          "fp-active-ws",
+          "fp-active-hm",
+        ),
+      );
     document.body.classList.remove("fp-spotlight-on");
 
     state.activeId = id;
@@ -298,11 +304,14 @@
 
     const m = state.markerById.get(id);
     if (!m) return;
+    const row = state.rowById.get(id);
+    const userClass =
+      row && row.user_name === "운석" ? "fp-active-ws" : "fp-active-hm";
     document.body.classList.add("fp-spotlight-on");
     const tryAttach = (n = 0) => {
       const el = m.getElement && m.getElement();
       if (el) {
-        el.classList.add("fp-active-host");
+        el.classList.add("fp-active-host", userClass);
       } else if (n < 10) {
         // 클러스터에 묶여 있어 element 가 아직 없으면 잠깐 후 재시도
         setTimeout(() => tryAttach(n + 1), 80);

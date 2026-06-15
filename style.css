@@ -435,13 +435,22 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
 }
 .fp-active-host {
   z-index: 999 !important;
+}
+.fp-active-host.fp-active-hm {
   filter:
     drop-shadow(0 0 14px rgba(255, 220, 150, 1.0))
-    drop-shadow(0 0 8px  rgba(255, 220, 150, 1.0))
+    drop-shadow(0 0 8px rgba(255, 220, 150, 1.0))
     saturate(1.15);
-  animation: fp-active-glow 1.4s ease-in-out infinite;
+  animation: fp-active-glow-yellow 1.4s ease-in-out infinite;
 }
-@keyframes fp-active-glow {
+.fp-active-host.fp-active-ws {
+  filter:
+    drop-shadow(0 0 14px rgba(255, 175, 205, 1.0))
+    drop-shadow(0 0 8px rgba(255, 175, 205, 1.0))
+    saturate(1.15);
+  animation: fp-active-glow-pink 1.4s ease-in-out infinite;
+}
+@keyframes fp-active-glow-yellow {
   0%, 100% {
     filter:
       drop-shadow(0 0 14px rgba(255, 220, 150, 1.0))
@@ -452,6 +461,20 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
     filter:
       drop-shadow(0 0 22px rgba(255, 240, 180, 1.0))
       drop-shadow(0 0 14px rgba(255, 240, 180, 1.0))
+      saturate(1.35);
+  }
+}
+@keyframes fp-active-glow-pink {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 14px rgba(255, 175, 205, 1.0))
+      drop-shadow(0 0 8px  rgba(255, 175, 205, 1.0))
+      saturate(1.15);
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 22px rgba(255, 200, 220, 1.0))
+      drop-shadow(0 0 14px rgba(255, 200, 220, 1.0))
       saturate(1.35);
   }
 }
