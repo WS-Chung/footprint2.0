@@ -35,8 +35,14 @@
   const ICON_SIZE = [40, 52];
   const TILE_OPACITY = 0.5;
 
+  // 활동 사용자 전환 시 요구할 비밀번호 (간단한 흥미 요소 — 보안 목적 아님)
+  const USER_PASSWORDS = {
+    "운석": "0329",
+    "혜민": "0906",
+  };
+
   const state = {
-    user: "운석",
+    user: null,                     // 초기엔 무선택 — 둘 중 하나가 비밀번호로 인증돼야 설정됨
     isAdding: false,
     tempLatLng: null,
     tempMarker: null,
@@ -237,9 +243,36 @@
   // ── 사용자 배지 ─────────────────────────────────────
   function renderUserBadge() {
     const badge = $("#user-badge");
+    if (state.user == null) {
+      badge.textContent = "💭 활동할 사용자를 선택해 주세요";
+      badge.classList.remove("user-hm");
+      badge.classList.add("user-none");
+      return;
+    }
     const icon = state.user === "운석" ? "🩵" : "🩷";
     badge.textContent = `${icon} ${state.user} 으로 활동 중`;
     badge.classList.toggle("user-hm", state.user === "혜민");
+    badge.classList.remove("user-none");
+  }
+
+  // 무선택/사용자 변경 시 UI 토글 (등록 버튼, 열려 있는 팝업 권한 표시)
+  function renderActiveUserUI() {
+    const hasUser = state.user != null;
+    $("#btn-add-mode").disabled = !hasUser;
+    if (!hasUser && state.isAdding) {
+      setAddMode(false);
+    }
+    // 라디오를 state.user 와 정합 시킴 (취소/오답 시 원래대로 복원)
+    document.querySelectorAll("input[name='user']").forEach((r) => {
+      r.checked = r.value === state.user;
+    });
+    // 열려 있는 팝업이 있으면 권한 변화 반영
+    if (state.activeId != null) {
+      const m = state.markerById.get(state.activeId);
+      if (m && m.isPopupOpen()) {
+        m.setPopupContent(popupHtml(state.rowById.get(state.activeId)));
+      }
+    }
   }
 
   // ── 활성 마커 강조 ──────────────────────────────────
@@ -853,21 +886,62 @@
   });
 
   // ── 좌측 메뉴 이벤트 ────────────────────────────────
+  // 라디오를 클릭해도 곧장 사용자가 바뀌지 않고 비밀번호 모달이 뜬다.
+  // 통과해야만 state.user 가 갱신됨.
+  let pendingUserSelection = null;
+
+  function promptForUser(targetUser) {
+    if (!targetUser || !(targetUser in USER_PASSWORDS)) return;
+    pendingUserSelection = targetUser;
+    $("#password-msg").textContent =
+      `'${targetUser}' 으로 활동하려면 비밀번호를 입력해 주세요.`;
+    $("#password-error").hidden = true;
+    const form = $("#form-password");
+    form.reset();
+    openDialog("dialog-password");
+    setTimeout(() => form.querySelector("input[name='password']").focus(), 80);
+  }
+
   document.querySelectorAll("input[name='user']").forEach((r) => {
-    r.addEventListener("change", () => {
-      state.user = r.value;
-      renderUserBadge();
-      // 현재 열려 있는 팝업이 있으면 권한 변화 반영을 위해 다시 그리기
-      if (state.activeId != null) {
-        const m = state.markerById.get(state.activeId);
-        if (m && m.isPopupOpen()) {
-          m.setPopupContent(popupHtml(state.rowById.get(state.activeId)));
-        }
-      }
+    r.addEventListener("change", (e) => {
+      const target = e.currentTarget.value;
+      if (target === state.user) return;       // 이미 해당 사용자면 아무 동작 X
+      promptForUser(target);
     });
   });
 
-  $("#btn-add-mode").addEventListener("click", () => setAddMode(true));
+  $("#form-password").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const pw = e.currentTarget.password.value;
+    const target = pendingUserSelection;
+    if (target && USER_PASSWORDS[target] === pw) {
+      state.user = target;
+      pendingUserSelection = null;
+      closeDialog("dialog-password");
+      renderUserBadge();
+      renderActiveUserUI();
+      showToast(`${target} 으로 전환됐어요`);
+    } else {
+      $("#password-error").textContent = "비밀번호가 올바르지 않아요.";
+      $("#password-error").hidden = false;
+      e.currentTarget.password.select();
+      // UI 변동 없음 — 라디오는 그대로(상태와 어긋난 상태) 두고 close 시 복원
+    }
+  });
+
+  // 비밀번호 모달이 어떤 경로(취소/X/Esc)로든 닫히면 라디오를 state.user 에 다시 맞춘다
+  document.getElementById("dialog-password").addEventListener("close", () => {
+    pendingUserSelection = null;
+    renderActiveUserUI();
+  });
+
+  $("#btn-add-mode").addEventListener("click", () => {
+    if (state.user == null) {
+      showToast("먼저 활동할 사용자를 선택해 주세요.");
+      return;
+    }
+    setAddMode(true);
+  });
   $("#btn-cancel-add").addEventListener("click", () => {
     setAddMode(false);
     closeDialog("dialog-add");
@@ -875,6 +949,7 @@
 
   // ── 첫 페인트 ──────────────────────────────────────
   renderUserBadge();
+  renderActiveUserUI();
   loadAll();
 
   // ── ESC 처리 ──────────────────────────────────────

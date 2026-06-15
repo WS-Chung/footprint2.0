@@ -51,7 +51,7 @@
         <div class="label">나는 누구?</div>
         <div class="user-radio" role="radiogroup" aria-label="유저 선택">
           <label>
-            <input type="radio" name="user" value="운석" checked />
+            <input type="radio" name="user" value="운석" />
             <span>운석</span>
           </label>
           <label>
@@ -200,6 +200,31 @@
       <button type="button" class="btn" data-close="dialog-delete">취소</button>
       <button type="button" class="btn danger" id="btn-confirm-delete">✅ 삭제</button>
     </footer>
+  </dialog>
+
+  <!-- 비밀번호 모달 (활동 사용자 전환 시) -->
+  <dialog id="dialog-password" class="fp-dialog small">
+    <form id="form-password" method="dialog">
+      <header class="fp-dialog-head">
+        <h2 id="password-title">🔒 비밀번호</h2>
+        <button type="button" class="x" data-close="dialog-password" aria-label="닫기">×</button>
+      </header>
+      <p id="password-msg" class="caption"></p>
+      <input
+        type="password"
+        name="password"
+        autocomplete="off"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        placeholder="숫자 4자리"
+        required
+      />
+      <div class="error-msg" id="password-error" hidden></div>
+      <footer class="fp-dialog-foot">
+        <button type="button" class="btn" data-close="dialog-password">취소</button>
+        <button type="submit" class="btn primary">확인</button>
+      </footer>
+    </form>
   </dialog>
 
   <!-- 토스트 -->

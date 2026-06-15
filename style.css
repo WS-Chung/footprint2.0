@@ -140,6 +140,12 @@ html, body {
 .user-badge.user-hm {
   border-left-color: var(--accent-hm);
 }
+.user-badge.user-none {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--muted);
+  border-left-color: var(--card-border);
+  font-weight: 400;
+}
 
 .divider {
   border: none;
