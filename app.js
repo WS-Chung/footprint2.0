@@ -244,23 +244,33 @@
   function renderUserBadge() {
     const badge = $("#user-badge");
     if (state.user == null) {
-      badge.textContent = "💭 활동할 사용자를 선택해 주세요";
+      badge.innerHTML = "💭 활동할 사용자를 선택해 주세요";
       badge.classList.remove("user-hm");
       badge.classList.add("user-none");
       return;
     }
-    const icon = state.user === "운석" ? "🩵" : "🩷";
-    badge.textContent = `${icon} ${state.user} 으로 활동 중`;
+    const file = state.user === "운석" ? "ws.png" : "hm.png";
+    badge.innerHTML =
+      `<img class="user-badge-img" src="${file}" alt="" />` +
+      `<span><b>${escapeHtml(state.user)}</b> 으로 활동 중</span>`;
     badge.classList.toggle("user-hm", state.user === "혜민");
     badge.classList.remove("user-none");
   }
 
-  // 무선택/사용자 변경 시 UI 토글 (등록 버튼, 열려 있는 팝업 권한 표시)
+  // 무선택/사용자 변경 시 UI 토글 (등록 버튼, 열려 있는 팝업 권한 표시, 테마 전환)
   function renderActiveUserUI() {
     const hasUser = state.user != null;
     $("#btn-add-mode").disabled = !hasUser;
     if (!hasUser && state.isAdding) {
       setAddMode(false);
+    }
+    // body[data-user] 로 테마 토큰 스왑 (CSS 가 알아서 색감을 바꿈)
+    if (state.user === "운석") {
+      document.body.dataset.user = "ws";
+    } else if (state.user === "혜민") {
+      document.body.dataset.user = "hm";
+    } else {
+      delete document.body.dataset.user;
     }
     // 라디오를 state.user 와 정합 시킴 (취소/오답 시 원래대로 복원)
     document.querySelectorAll("input[name='user']").forEach((r) => {
@@ -457,6 +467,7 @@
     state.isAdding = on;
     $("#btn-add-mode").hidden = on;
     $("#add-hint").hidden = !on;
+    $("#map").classList.toggle("is-adding", on);
     if (on) {
       setStatus("📍 지도를 클릭해 위치를 선택하세요");
       // 진행 중이던 팝업 닫고 강조 해제

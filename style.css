@@ -1,8 +1,10 @@
 /* ─────────────────────────────────────────────────────────
-   Theme tokens — 따뜻한 아이보리 + 모카 (절제된 톤)
+   Theme tokens — 사용자별로 색감이 바뀐다
    ───────────────────────────────────────────────────────── */
 :root {
-  --bg:            #FBF7F2;
+  /* 무선택(열람 모드) — 따뜻한 아이보리 + 모카 */
+  --bg-top:        #FBF7F2;
+  --bg-bot:        #F6EDE3;
   --card-bg:       #FFFFFF;
   --card-border:   #EDE3D6;
   --divider:       #F2EAE0;
@@ -17,11 +19,42 @@
   --disabled:      #E2D9CC;
   --info-bg:       #FBF1E6;
   --map-border:    #E5C9B6;
+  --map-border-active: #B58E73;
 }
 
-/* SVG 하트 패턴 (옅게) */
+/* 운석 — 하늘색 톤 */
+body[data-user="ws"] {
+  --bg-top:        #F2F8FD;
+  --bg-bot:        #DCEAF6;
+  --card-border:   #D2E1EE;
+  --divider:       #E2EDF6;
+  --primary:       #8FB7DA;
+  --primary-hover: #7BA8CC;
+  --info-bg:       #EAF3FA;
+  --map-border:    #B0CCE5;
+  --map-border-active: #5C8DB8;
+  --text:          #2B3A4A;
+  --muted:         #6E8499;
+}
+
+/* 혜민 — 분홍색 톤 */
+body[data-user="hm"] {
+  --bg-top:        #FBF2F6;
+  --bg-bot:        #F6E1EB;
+  --card-border:   #EDD2DC;
+  --divider:       #F2E0E8;
+  --primary:       #D8A1B6;
+  --primary-hover: #C88EA8;
+  --info-bg:       #FBE6EE;
+  --map-border:    #E5B5C8;
+  --map-border-active: #B57692;
+  --text:          #4A2E3C;
+  --muted:         #957585;
+}
+
+/* SVG 하트 패턴 — 약한 베이지로 그대로 두되, 테마 위에서 자연스럽게 비침 */
 :root {
-  --heart-pattern: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'56'%20height%3D'56'%20viewBox%3D'0%200%2056%2056'%3E%3Cg%20fill%3D'%23E5C9B6'%20fill-opacity%3D'0.22'%3E%3Cpath%20d%3D'M14%2018.5c0-2.6%202.1-4.7%204.7-4.7%201.7%200%203.2.9%204%202.3.8-1.4%202.3-2.3%204-2.3%202.6%200%204.7%202.1%204.7%204.7%200%204.5-8.7%209-8.7%209s-8.7-4.5-8.7-9z'%2F%3E%3Cpath%20d%3D'M40%2040c0-1.7%201.4-3.1%203.1-3.1%201.1%200%202.1.6%202.6%201.5.5-.9%201.5-1.5%202.6-1.5%201.7%200%203.1%201.4%203.1%203.1%200%202.9-5.7%205.9-5.7%205.9s-5.7-3-5.7-5.9z'%20opacity%3D'0.7'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+  --heart-pattern: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'56'%20height%3D'56'%20viewBox%3D'0%200%2056%2056'%3E%3Cg%20fill%3D'%23E5C9B6'%20fill-opacity%3D'0.18'%3E%3Cpath%20d%3D'M14%2018.5c0-2.6%202.1-4.7%204.7-4.7%201.7%200%203.2.9%204%202.3.8-1.4%202.3-2.3%204-2.3%202.6%200%204.7%202.1%204.7%204.7%200%204.5-8.7%209-8.7%209s-8.7-4.5-8.7-9z'%2F%3E%3Cpath%20d%3D'M40%2040c0-1.7%201.4-3.1%203.1-3.1%201.1%200%202.1.6%202.6%201.5.5-.9%201.5-1.5%202.6-1.5%201.7%200%203.1%201.4%203.1%203.1%200%202.9-5.7%205.9-5.7%205.9s-5.7-3-5.7-5.9z'%20opacity%3D'0.7'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
 }
 
 * {
@@ -36,29 +69,30 @@ html, body {
   color: var(--text);
   background:
     var(--heart-pattern) repeat,
-    linear-gradient(180deg, #FBF7F2 0%, #F6EDE3 100%);
+    linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bot) 100%);
   background-size: 56px 56px, auto;
   background-attachment: fixed;
   min-height: 100vh;
+  transition: background 220ms ease;
 }
 
-/* ─── Top bar ─────────────────────────────────────────── */
-.topbar {
-  padding: 14px 24px 6px 24px;
-  max-width: 1480px;
-  margin: 0 auto;
+/* ─── Top bar (제거됨 — 타이틀은 메뉴 안으로 이동) ─── */
+
+.brand {
+  margin-bottom: 6px;
 }
 .brand-title {
   font-family: "Dongle", "Quicksand", "Pretendard", sans-serif;
-  font-size: 2.4rem;
+  font-size: 2.2rem;
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: 0.5px;
+  color: var(--text);
 }
 .brand-sub {
   font-family: "Dongle", "Quicksand", "Pretendard", sans-serif;
   color: var(--muted);
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 400;
   margin-top: -4px;
 }
@@ -67,18 +101,24 @@ html, body {
 .layout {
   display: grid;
   grid-template-columns: 280px 1fr;
+  align-items: stretch;          /* 메뉴와 지도 같은 높이로 늘리기 */
   gap: 24px;
-  padding: 8px 24px 24px 24px;
+  padding: 24px 24px 24px 24px;
   max-width: 1480px;
   margin: 0 auto;
 }
 .menu {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.78);
   border: 1px solid var(--card-border);
   border-radius: 18px;
   padding: 18px;
   box-shadow: 0 4px 18px rgba(189, 153, 122, 0.10);
-  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 640px;                 /* 지도 높이와 동일 */
+  overflow-y: auto;
+  transition: background 220ms ease, border-color 220ms ease;
 }
 .map-area {
   position: relative;
@@ -92,20 +132,51 @@ html, body {
   box-shadow: 0 6px 24px rgba(189, 153, 122, 0.18);
   background: var(--card-bg);
   overflow: hidden;
+  transition:
+    border-color 200ms ease,
+    border-width 160ms ease,
+    box-shadow   200ms ease;
+}
+
+/* 등록 모드 — 지도 테두리 강조 (두께 1.5배 + 강한 톤 + 부드러운 펄스) */
+#map.is-adding {
+  border-width: 4px;
+  border-color: var(--map-border-active);
+  box-shadow:
+    0 0 0 3px rgba(0, 0, 0, 0.0),
+    0 6px 24px rgba(120, 86, 60, 0.22);
+  animation: fp-add-pulse 1.6s ease-in-out infinite;
+}
+@keyframes fp-add-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px rgba(0, 0, 0, 0.0),
+      0 6px 24px rgba(120, 86, 60, 0.22);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(0, 0, 0, 0.0),
+      0 8px 28px rgba(120, 86, 60, 0.32);
+  }
 }
 
 .map-status {
   position: absolute;
   top: 14px;
-  right: 14px;
+  left: 50%;
+  transform: translateX(-50%);
   background: var(--info-bg);
   border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 8px 14px;
+  border-radius: 14px;
+  padding: 10px 18px;
   color: var(--text);
-  font-weight: 600;
+  font-family: "Dongle", "Quicksand", "Pretendard", sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
   z-index: 500;
   pointer-events: none;
+  box-shadow: 0 4px 14px rgba(120, 86, 60, 0.18);
 }
 
 /* ─── Menu pieces ─────────────────────────────────────── */
@@ -132,10 +203,15 @@ html, body {
   border-radius: 14px;
   background: var(--info-bg);
   font-family: "Dongle", "Quicksand", "Pretendard", sans-serif;
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   font-weight: 700;
   letter-spacing: 0.2px;
   border-left: 4px solid var(--accent-ws);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.2;
+  transition: background 220ms ease, border-color 220ms ease;
 }
 .user-badge.user-hm {
   border-left-color: var(--accent-hm);
@@ -145,6 +221,13 @@ html, body {
   color: var(--muted);
   border-left-color: var(--card-border);
   font-weight: 400;
+}
+.user-badge .user-badge-img {
+  width: 32px;
+  height: 42px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  display: block;
 }
 
 .divider {
@@ -593,6 +676,11 @@ dialog.lightbox img {
   .layout {
     grid-template-columns: 1fr;
     gap: 12px;
+    padding: 12px;
+  }
+  .menu {
+    height: auto;
+    overflow: visible;
   }
   #map { height: 60vh; }
 }
