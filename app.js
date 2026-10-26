@@ -32,8 +32,8 @@
   const COMPRESS_SIZE = 400;       // 정사각 400px
   const COMPRESS_QUALITY = 0.85;   // JPEG quality
   const DEFAULT_CENTER = [37.34541, 127.08995];
-  const ICON_SIZE = [48, 48];        // 정사각 마커 PNG 기준 (가로, 세로)
-  const TEMP_ICON_SIZE = [52, 52];   // 등록 모드 임시 마커는 살짝 크게
+  const ICON_SIZE = [40, 52];        // 마커 PNG 비율 가로 1 : 세로 1.3
+  const TEMP_ICON_SIZE = [44, 57];   // 등록 모드 임시 마커는 살짝 크게 (≈ 1 : 1.3)
   const TILE_OPACITY = 0.5;
 
   // ── 마커 이미지 설정 ────────────────────────────────
@@ -45,12 +45,15 @@
     "운석": "apeach.png",
     "혜민": "tube.png",
   };
-  // image/markers.js 가 로드되지 않았을 때의 안전망
+  // 후광 색이 지정되지 않은 마커용 기본값 ("R, G, B")
+  const DEFAULT_GLOW = "255, 220, 150";
+  const DEFAULT_GLOW_PEAK = "255, 240, 180";
+  // 후보 목록은 image/markers.js(window.FP_MARKERS) — 로드 실패 시 기본 2종으로 동작
   const MARKERS = (Array.isArray(window.FP_MARKERS) && window.FP_MARKERS.length
     ? window.FP_MARKERS
     : [
-        { file: "tube.png", name: "튜브" },
         { file: "apeach.png", name: "어피치" },
+        { file: "tube.png", name: "튜브" },
       ]
   ).filter((m) => m && m.file);
 
@@ -336,16 +339,12 @@
 
   // ── 활성 마커 강조 ──────────────────────────────────
   function setActive(id) {
-    // 이전 강조 제거 (베이스 + 사용자별 클래스 모두)
-    document
-      .querySelectorAll(".fp-active-host")
-      .forEach((el) =>
-        el.classList.remove(
-          "fp-active-host",
-          "fp-active-ws",
-          "fp-active-hm",
-        ),
-      );
+    // 이전 강조 제거 (클래스 + 후광 색 변수)
+    document.querySelectorAll(".fp-active-host").forEach((el) => {
+      el.classList.remove("fp-active-host");
+      el.style.removeProperty("--fp-glow");
+      el.style.removeProperty("--fp-glow-peak");
+    });
     document.body.classList.remove("fp-spotlight-on");
 
     state.activeId = id;
@@ -354,13 +353,17 @@
     const m = state.markerById.get(id);
     if (!m) return;
     const row = state.rowById.get(id);
-    const userClass =
-      row && row.user_name === "운석" ? "fp-active-ws" : "fp-active-hm";
+    // 후광 색은 캐릭터(마커 파일)별 — image/markers.js 의 glow / glowPeak
+    const info = markerInfo(markerFileFor(row && row.user_name));
+    const glow = info.glow || DEFAULT_GLOW;
+    const glowPeak = info.glowPeak || info.glow || DEFAULT_GLOW_PEAK;
     document.body.classList.add("fp-spotlight-on");
     const tryAttach = (n = 0) => {
       const el = m.getElement && m.getElement();
       if (el) {
-        el.classList.add("fp-active-host", userClass);
+        el.classList.add("fp-active-host");
+        el.style.setProperty("--fp-glow", glow);
+        el.style.setProperty("--fp-glow-peak", glowPeak);
       } else if (n < 10) {
         // 클러스터에 묶여 있어 element 가 아직 없으면 잠깐 후 재시도
         setTimeout(() => tryAttach(n + 1), 80);
@@ -1033,8 +1036,10 @@
       renderUserBadge();
       renderActiveUserUI();
       showToast(`${target} 으로 전환됐어요`);
-      // 인증 직후 마커 고르기 화면 제시
-      openMarkerPicker();
+      // 팝업 없이 가장 최근 마커를 적용 — 다른 기기에서 바꿨을 수 있으니 DB 값으로 조용히 맞춤
+      loadUserMarkers().then((changed) => {
+        if (changed) refreshMarkerIcons();
+      });
     } else {
       $("#password-error").textContent = "비밀번호가 올바르지 않아요.";
       $("#password-error").hidden = false;
@@ -1050,9 +1055,18 @@
   });
 
   // ── 마커 고르기 모달 ────────────────────────────────
-  // 본인이 현재 쓰는 마커 / 다른 유저가 쓰는 마커는 50% 투명 + 선택 불가.
-  // 후보 목록은 image/markers.js(window.FP_MARKERS) 기준 — 항목이 늘면 그리드가 자동 확장.
+  // 열면 본인이 마지막으로 사용한 마커(DB user_markers)가 기본 선택된 상태.
+  // 다른 유저가 쓰는 마커는 50% 투명 + 선택 불가.
+  // 후보 목록은 image/markers.js(window.FP_MARKERS) 기준.
   let markerPickSelected = null;
+
+  // 선택이 현재 마커와 같으면 '이대로 사용', 다르면 '이 마커로 변경'
+  function updateMarkerSubmit() {
+    const btn = $("#marker-submit");
+    const isCurrent = markerPickSelected === markerFileFor(state.user);
+    btn.disabled = !markerPickSelected;
+    btn.textContent = isCurrent ? "✅ 이대로 사용" : "✅ 이 마커로 변경";
+  }
 
   // file → 사용 중인 user_name (본인 포함)
   function markerOwners() {
@@ -1067,22 +1081,20 @@
     const grid = $("#marker-grid");
     const owners = markerOwners();
     const me = state.user;
-    let availableCount = 0;
 
     grid.innerHTML = MARKERS.map((m) => {
       const owner = owners.get(m.file);
       const isMine = owner === me;
       const isTaken = owner != null && !isMine;
-      const isLocked = isMine || isTaken;
-      if (!isLocked) availableCount++;
+      const isLocked = isTaken;              // 다른 유저 것만 잠금
       const isSelected = !isLocked && m.file === markerPickSelected;
       const tag = isMine
-        ? `<span class="marker-tag mine">내 마커</span>`
+        ? `<span class="marker-tag mine">지금 사용 중</span>`
         : isTaken
           ? `<span class="marker-tag taken">${escapeHtml(owner)} 사용 중</span>`
           : "";
       const stateLabel = isMine
-        ? " (현재 내 마커)"
+        ? " (지금 사용 중)"
         : isTaken
           ? ` (${owner} 사용 중)`
           : "";
@@ -1108,25 +1120,31 @@
     }).join("");
 
     const current = markerInfo(markerFileFor(me));
-    $("#marker-msg").textContent = availableCount
-      ? `'${me}' 님이 지도에 남길 마커를 골라 주세요. 지금은 '${current.name}' 마커를 쓰고 있어요.`
-      : `지금은 새로 고를 수 있는 마커가 없어요. image 폴더에 마커를 추가하면 여기에 나타나요. (현재: '${current.name}')`;
-    $("#marker-submit").disabled = !markerPickSelected;
+    $("#marker-msg").textContent =
+      `'${me}' 님은 지금 '${current.name}' 마커를 쓰고 있어요. 그대로 쓰거나 다른 마커를 골라 주세요.`;
+    updateMarkerSubmit();
   }
 
   async function openMarkerPicker() {
     if (state.user == null) return;
-    markerPickSelected = null;
+    // 기본 선택 = 마지막으로 사용한 마커
+    markerPickSelected = markerFileFor(state.user);
     $("#marker-error").hidden = true;
     renderMarkerPicker();
     openDialog("dialog-marker");
-    // 다른 유저가 그사이 마커를 바꿨을 수 있으니 최신 매핑으로 다시 그림
+    // 다른 기기에서 바꿨을 수 있으니 DB 최신값으로 다시 맞춤
+    const before = markerPickSelected;
     const changed = await loadUserMarkers();
     if (changed) {
       refreshMarkerIcons();
-      // 고르던 마커가 방금 다른 유저에게 선점됐으면 선택 해제
-      if (markerPickSelected && markerOwners().has(markerPickSelected)) {
-        markerPickSelected = null;
+      const owners = markerOwners();
+      const latest = markerFileFor(state.user);
+      if (markerPickSelected === before) {
+        // 아직 아무것도 안 건드렸으면 최신 '마지막 마커'로 기본 선택 갱신
+        markerPickSelected = latest;
+      } else if (owners.has(markerPickSelected) && owners.get(markerPickSelected) !== state.user) {
+        // 고르던 마커가 방금 다른 유저에게 선점됐으면 내 마커로 되돌림
+        markerPickSelected = latest;
       }
       if ($("#dialog-marker").open) renderMarkerPicker();
     }
@@ -1152,11 +1170,17 @@
     const errEl = $("#marker-error");
     const btn = $("#marker-submit");
 
+    // 마지막 마커 그대로 사용 — 저장할 것 없음
+    if (file === markerFileFor(user)) {
+      closeDialog("dialog-marker");
+      return;
+    }
+
     // 저장 직전 최신 상태로 한 번 더 중복 확인
     await loadUserMarkers();
     const owner = markerOwners().get(file);
     if (owner != null && owner !== user) {
-      markerPickSelected = null;
+      markerPickSelected = markerFileFor(user);
       refreshMarkerIcons();
       renderMarkerPicker();
       errEl.textContent = `'${owner}' 님이 방금 이 마커를 선택했어요. 다른 마커를 골라 주세요.`;
@@ -1184,7 +1208,7 @@
       if (code === "23505") {
         // UNIQUE(marker) 위반 — 다른 유저가 동시에 같은 마커를 저장
         await loadUserMarkers();
-        markerPickSelected = null;
+        markerPickSelected = markerFileFor(user);
         refreshMarkerIcons();
         renderMarkerPicker();
         errEl.textContent = "다른 유저가 이미 사용 중인 마커예요. 다른 마커를 골라 주세요.";
@@ -1196,7 +1220,7 @@
       errEl.hidden = false;
     } finally {
       btn.classList.remove("is-busy");
-      btn.textContent = "✅ 이 마커로 변경";
+      updateMarkerSubmit();
     }
   });
 

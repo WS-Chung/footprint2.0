@@ -60,15 +60,15 @@
           </label>
         </div>
         <div id="user-badge" class="user-badge"></div>
-        <button id="btn-change-marker" class="btn block btn-change-marker" type="button" hidden>
-          🎨 내 마커 바꾸기
-        </button>
       </section>
 
       <hr class="divider" />
 
       <section>
         <button id="btn-add-mode" class="btn primary block">📍 새 발자국 등록</button>
+        <button id="btn-change-marker" class="btn block btn-change-marker" type="button" hidden>
+          🎨 내 마커 바꾸기
+        </button>
         <div id="add-hint" class="add-hint" hidden>
           🗺️ 지도를 클릭해서 위치를 선택해 주세요.<br />
           클릭한 자리에서 입력 팝업이 열려요.
@@ -230,7 +230,7 @@
     </form>
   </dialog>
 
-  <!-- 마커 선택 모달 (비밀번호 인증 직후 / '내 마커 바꾸기' 클릭 시) -->
+  <!-- 마커 선택 모달 ('내 마커 바꾸기' 버튼으로만 열림) -->
   <dialog id="dialog-marker" class="fp-dialog">
     <header class="fp-dialog-head">
       <h2>🎨 내 마커 고르기</h2>
@@ -238,11 +238,11 @@
     </header>
     <p id="marker-msg" class="caption"></p>
     <div id="marker-grid" class="marker-grid" role="radiogroup" aria-label="마커 선택"></div>
-    <p class="hint marker-legend">흐리게 보이는 마커는 이미 사용 중이라 고를 수 없어요.</p>
+    <p class="hint marker-legend">흐리게 보이는 마커는 다른 사람이 사용 중이라 고를 수 없어요.</p>
     <div class="error-msg" id="marker-error" hidden></div>
     <footer class="fp-dialog-foot">
-      <button type="button" class="btn" data-close="dialog-marker">지금 마커 유지</button>
-      <button type="button" class="btn primary" id="marker-submit" disabled>✅ 이 마커로 변경</button>
+      <button type="button" class="btn" data-close="dialog-marker">취소</button>
+      <button type="button" class="btn primary" id="marker-submit">✅ 이대로 사용</button>
     </footer>
   </dialog>
 
