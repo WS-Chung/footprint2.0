@@ -32,8 +32,8 @@
   const COMPRESS_SIZE = 400;       // 정사각 400px
   const COMPRESS_QUALITY = 0.85;   // JPEG quality
   const DEFAULT_CENTER = [37.34541, 127.08995];
-  const ICON_SIZE = [40, 52];        // 마커 PNG 비율 가로 1 : 세로 1.3
-  const TEMP_ICON_SIZE = [44, 57];   // 등록 모드 임시 마커는 살짝 크게 (≈ 1 : 1.3)
+  const ICON_SIZE = [40, 52];        // 기본 마커 크기 (가로 1 : 세로 1.3) — markers.js 의 size 가 우선
+  const TEMP_ICON_SCALE = 1.1;       // 등록 모드 임시 마커는 해당 마커보다 10% 크게
   const TILE_OPACITY = 0.5;
 
   // ── 마커 이미지 설정 ────────────────────────────────
@@ -52,8 +52,8 @@
   const MARKERS = (Array.isArray(window.FP_MARKERS) && window.FP_MARKERS.length
     ? window.FP_MARKERS
     : [
-        { file: "apeach.png", name: "어피치" },
-        { file: "tube.png", name: "튜브" },
+        { file: "apeach.png", name: "어피치", size: [40, 52] },
+        { file: "tube.png", name: "튜브", size: [40, 52] },
       ]
   ).filter((m) => m && m.file);
 
@@ -101,17 +101,24 @@
     );
   }
 
+  // 마커별 지도 크기 [가로, 세로] — 어피치/튜브 40×52, 나머지 44×57 (markers.js 의 size)
+  function markerSizeFor(file) {
+    const size = markerInfo(file).size;
+    return Array.isArray(size) && size.length === 2 ? size : ICON_SIZE;
+  }
+
   function iconFor(userName) {
     const file = markerFileFor(userName);
     if (!iconCache.has(file)) {
+      const [w, h] = markerSizeFor(file);
       iconCache.set(
         file,
         L.icon({
           iconUrl: markerSrc(file),
-          iconSize: ICON_SIZE,
-          iconAnchor: [ICON_SIZE[0] / 2, ICON_SIZE[1]],
-          popupAnchor: [0, -ICON_SIZE[1]],
-          tooltipAnchor: [0, -ICON_SIZE[1] + 6],
+          iconSize: [w, h],
+          iconAnchor: [w / 2, h],         // 발끝(아래 가운데)이 좌표를 가리키도록
+          popupAnchor: [0, -h],
+          tooltipAnchor: [0, -h + 6],
           className: "fp-marker-img",   // 비율이 다른 이미지도 찌그러지지 않게 (object-fit)
         }),
       );
@@ -119,16 +126,20 @@
     return iconCache.get(file);
   }
 
-  // 임시 마커는 현재 사용자의 마커 + .fp-temp-host 클래스로 톤 변경
+  // 임시 마커는 현재 사용자의 마커를 10% 크게 + .fp-temp-host 클래스로 톤 변경
+  // (40×52 → 44×57, 44×57 → 48×63)
   function tempIconFor(userName) {
     const file = markerFileFor(userName);
     if (!tempIconCache.has(file)) {
+      const [bw, bh] = markerSizeFor(file);
+      const w = Math.round(bw * TEMP_ICON_SCALE);
+      const h = Math.round(bh * TEMP_ICON_SCALE);
       tempIconCache.set(
         file,
         L.icon({
           iconUrl: markerSrc(file),
-          iconSize: TEMP_ICON_SIZE,
-          iconAnchor: [TEMP_ICON_SIZE[0] / 2, TEMP_ICON_SIZE[1] - 2],
+          iconSize: [w, h],
+          iconAnchor: [w / 2, h - 2],
           className: "fp-marker-img fp-temp-host",
         }),
       );
