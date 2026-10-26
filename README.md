@@ -11,7 +11,10 @@ footprint-v2/
 ├── style.css             # 테마 (아이보리 + 모카, 하트 배경 패턴)
 ├── app.js                # 모든 로직 (Leaflet + Supabase + 모달/CRUD)
 ├── config.example.js     # 설정 템플릿 (복사해서 config.js 로 사용)
-├── ws.png / hm.png       # 마커 이미지
+├── image/
+│   ├── markers.js        # 마커 후보 목록 (새 마커는 여기에 한 줄 추가)
+│   ├── tube.png          # 혜민 기본 마커
+│   └── apeach.png        # 운석 기본 마커
 ├── vercel.json           # Vercel 정적 배포 설정 (선택)
 └── README.md
 ```
@@ -65,9 +68,43 @@ CREATE POLICY "anyone can update" ON public.footprints FOR UPDATE USING (true);
 CREATE POLICY "anyone can delete" ON public.footprints FOR DELETE USING (true);
 ```
 
+### 사용자별 마커 (`user_markers`)
+
+사용자마다 고른 마커 파일명을 저장합니다. `marker` 에 UNIQUE 제약이 있어
+두 사용자가 같은 마커를 쓰는 것을 DB 차원에서도 막습니다.
+마커를 바꾸면 그 사용자의 기존 발자국도 모두 새 마커로 보입니다(`footprints` 테이블은 변경 없음).
+
+```sql
+CREATE TABLE public.user_markers (
+  user_name   text PRIMARY KEY,
+  marker      text NOT NULL UNIQUE,      -- image 폴더 기준 파일명 (예: 'tube.png')
+  updated_at  timestamptz DEFAULT now()
+);
+ALTER TABLE public.user_markers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anyone can read"   ON public.user_markers FOR SELECT USING (true);
+CREATE POLICY "anyone can insert" ON public.user_markers FOR INSERT WITH CHECK (true);
+CREATE POLICY "anyone can update" ON public.user_markers FOR UPDATE USING (true);
+
+-- 기존 마커 그대로 시작 (운석 = 어피치, 혜민 = 튜브)
+INSERT INTO public.user_markers (user_name, marker) VALUES
+  ('운석', 'apeach.png'),
+  ('혜민', 'tube.png');
+```
+
+테이블이 없으면 앱은 위 기본값으로 표시만 하고, 마커 변경 저장 시 안내 메시지를 띄웁니다.
+
+## 마커 추가하기
+
+1. 정사각형 PNG(투명 배경, 96×96 이상 권장 — 지도에는 48×48 로 표시)를 `image/` 폴더에 넣습니다.
+2. `image/markers.js` 의 `window.FP_MARKERS` 배열에 `{ file: "파일명.png", name: "표시 이름" }` 을 추가합니다.
+
+정적 호스팅에서는 브라우저가 폴더 목록을 읽을 수 없어서 이 목록에 있는 이미지만 후보로 나옵니다.
+선택 화면은 3열 그리드라 9개(3×3)까지 한 화면에 보이고, 그 이상은 스크롤됩니다.
+
 ## 동작 요약
 
-- **사용자 선택**: 좌측 라디오 (운석 / 혜민)
+- **사용자 선택**: 좌측 라디오 (운석 / 혜민) → 비밀번호 인증 후 마커 고르기 화면이 뜸
+- **마커 고르기**: 본인이 쓰는 마커와 다른 사용자가 쓰는 마커는 50% 투명 + 선택 불가. 좌측 "🎨 내 마커 바꾸기" 로 다시 열 수 있음
 - **마커 클릭**: 정보 + 수정/삭제 버튼이 든 팝업이 그 자리에 떠요. 본인 발자국이 아니면 액션 비활성.
 - **새 발자국 등록**: 좌측 "📍 새 발자국 등록" → 지도 클릭 → 좌표 위에 입력 모달.
 - **수정/삭제**: 팝업 액션 또는 모달 내부 흐름.

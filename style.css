@@ -223,8 +223,8 @@ html, body {
   font-weight: 400;
 }
 .user-badge .user-badge-img {
-  width: 32px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
   flex: 0 0 auto;
   display: block;
@@ -479,6 +479,12 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
   }
 }
 
+/* 마커 이미지 — 비율이 다른 PNG 도 찌그러지지 않고 아래(발끝) 기준으로 맞춤 */
+.leaflet-marker-icon.fp-marker-img {
+  object-fit: contain;
+  object-position: center bottom;
+}
+
 /* 임시 마커(등록 모드)는 살짝 강조 */
 .fp-temp-host {
   filter: drop-shadow(0 0 10px rgba(199, 124, 102, 0.6));
@@ -687,6 +693,106 @@ dialog.lightbox img {
   justify-content: center;
 }
 .lightbox-close:hover { background: rgba(255, 255, 255, 0.28); }
+
+/* ─── 마커 고르기 ────────────────────────────────────── */
+.btn-change-marker {
+  margin-top: 8px;
+}
+/* .btn.block 의 display:block 이 hidden 속성을 덮어쓰지 않도록 */
+.btn-change-marker[hidden] {
+  display: none;
+}
+
+/* 3열 그리드 — 후보가 늘어나면 행이 자동으로 추가된다 (9개 = 3×3).
+   그 이상이 되면 모달 안에서 스크롤. */
+.marker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-height: min(480px, 60vh);
+  overflow-y: auto;
+  padding: 2px;
+  margin-bottom: 8px;
+}
+.marker-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px 8px 6px;
+  border-radius: 14px;
+  border: 2px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 80ms ease;
+}
+.marker-option:hover:not(:disabled) {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+.marker-option:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+.marker-option.is-selected {
+  border-color: var(--map-border-active);
+  background: var(--info-bg);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(120, 86, 60, 0.18);
+}
+.marker-option.is-selected::after {
+  content: "✓";
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-weight: 700;
+  color: var(--map-border-active);
+}
+/* 본인이 현재 쓰는 마커 / 다른 유저가 쓰는 마커 — 50% 투명, 선택 불가 */
+.marker-option.is-locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.marker-thumb {
+  width: 100%;
+  height: 64px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.marker-thumb img {
+  max-width: 64px;
+  max-height: 64px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+.marker-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  word-break: keep-all;
+  text-align: center;
+}
+.marker-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--divider);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.marker-tag.mine {
+  background: var(--info-bg);
+  color: var(--text);
+}
+.marker-legend {
+  margin: 0 0 4px 0;
+}
 
 /* 저장/업로드 진행 중 비활성 */
 .btn.is-busy {

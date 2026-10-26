@@ -60,6 +60,9 @@
           </label>
         </div>
         <div id="user-badge" class="user-badge"></div>
+        <button id="btn-change-marker" class="btn block btn-change-marker" type="button" hidden>
+          🎨 내 마커 바꾸기
+        </button>
       </section>
 
       <hr class="divider" />
@@ -78,7 +81,7 @@
       <hr class="divider" />
 
       <p class="fp-tip">
-        🛈 지도 위의 어피치나 튜브를 클릭하면 정보 팝업이 뜨고, 본인이 등록한 발자국은
+        🛈 지도 위의 캐릭터를 클릭하면 정보 팝업이 뜨고, 본인이 등록한 발자국은
         거기서 수정·삭제할 수 있어요.
       </p>
     </aside>
@@ -227,6 +230,22 @@
     </form>
   </dialog>
 
+  <!-- 마커 선택 모달 (비밀번호 인증 직후 / '내 마커 바꾸기' 클릭 시) -->
+  <dialog id="dialog-marker" class="fp-dialog">
+    <header class="fp-dialog-head">
+      <h2>🎨 내 마커 고르기</h2>
+      <button type="button" class="x" data-close="dialog-marker" aria-label="닫기">×</button>
+    </header>
+    <p id="marker-msg" class="caption"></p>
+    <div id="marker-grid" class="marker-grid" role="radiogroup" aria-label="마커 선택"></div>
+    <p class="hint marker-legend">흐리게 보이는 마커는 이미 사용 중이라 고를 수 없어요.</p>
+    <div class="error-msg" id="marker-error" hidden></div>
+    <footer class="fp-dialog-foot">
+      <button type="button" class="btn" data-close="dialog-marker">지금 마커 유지</button>
+      <button type="button" class="btn primary" id="marker-submit" disabled>✅ 이 마커로 변경</button>
+    </footer>
+  </dialog>
+
   <!-- 토스트 -->
   <div id="toast" class="toast" hidden></div>
 
@@ -244,6 +263,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script src="config.js"></script>
+  <script src="image/markers.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

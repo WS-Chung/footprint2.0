@@ -32,8 +32,27 @@
   const COMPRESS_SIZE = 400;       // 정사각 400px
   const COMPRESS_QUALITY = 0.85;   // JPEG quality
   const DEFAULT_CENTER = [37.34541, 127.08995];
-  const ICON_SIZE = [40, 52];
+  const ICON_SIZE = [48, 48];        // 정사각 마커 PNG 기준 (가로, 세로)
+  const TEMP_ICON_SIZE = [52, 52];   // 등록 모드 임시 마커는 살짝 크게
   const TILE_OPACITY = 0.5;
+
+  // ── 마커 이미지 설정 ────────────────────────────────
+  // 사용자별 마커는 Supabase `user_markers` 테이블에 저장(user_name → marker 파일명).
+  // 테이블이 아직 없거나 행이 없으면 아래 기본값으로 동작한다.
+  const MARKER_TABLE = "user_markers";
+  const MARKER_DIR = "image/";
+  const DEFAULT_USER_MARKERS = {
+    "운석": "apeach.png",
+    "혜민": "tube.png",
+  };
+  // image/markers.js 가 로드되지 않았을 때의 안전망
+  const MARKERS = (Array.isArray(window.FP_MARKERS) && window.FP_MARKERS.length
+    ? window.FP_MARKERS
+    : [
+        { file: "tube.png", name: "튜브" },
+        { file: "apeach.png", name: "어피치" },
+      ]
+  ).filter((m) => m && m.file);
 
   // 활동 사용자 전환 시 요구할 비밀번호 (간단한 흥미 요소 — 보안 목적 아님)
   const USER_PASSWORDS = {
@@ -51,6 +70,7 @@
     rowById: new Map(),             // id → row
     markerById: new Map(),          // id → L.marker
     cluster: null,
+    userMarkers: { ...DEFAULT_USER_MARKERS }, // user_name → 마커 파일명
   };
 
   // 모달 안 이미지 상태 (Add / Edit 각각)
@@ -59,30 +79,58 @@
   let editItems = [];
   let editRemovedUrls = [];
 
-  // ── 마커 아이콘 (PNG 그대로 사용) ─────────────────────
-  const ICON_WS = L.icon({
-    iconUrl: "ws.png",
-    iconSize: ICON_SIZE,
-    iconAnchor: [ICON_SIZE[0] / 2, ICON_SIZE[1]],
-    popupAnchor: [0, -ICON_SIZE[1]],
-    tooltipAnchor: [0, -ICON_SIZE[1] + 6],
-  });
-  const ICON_HM = L.icon({
-    iconUrl: "hm.png",
-    iconSize: ICON_SIZE,
-    iconAnchor: [ICON_SIZE[0] / 2, ICON_SIZE[1]],
-    popupAnchor: [0, -ICON_SIZE[1]],
-    tooltipAnchor: [0, -ICON_SIZE[1] + 6],
-  });
-  const ICON_TEMP = L.icon({
-    iconUrl: "ws.png",                // 임시는 일단 ws 아이콘 재사용 + .fp-temp-host 클래스로 톤 변경
-    iconSize: [44, 56],
-    iconAnchor: [22, 54],
-    className: "fp-temp-host",
-  });
+  // ── 마커 아이콘 (PNG 그대로 사용, 파일별로 캐시) ─────────
+  const iconCache = new Map();      // file → L.icon
+  const tempIconCache = new Map();  // file → L.icon (등록 모드 임시 마커)
+
+  function markerSrc(file) {
+    return MARKER_DIR + encodeURIComponent(file);
+  }
+  function markerInfo(file) {
+    return MARKERS.find((m) => m.file === file) || { file, name: file };
+  }
+  // 사용자의 현재 마커 파일명 (DB → 기본값 → 목록 첫 번째 순)
+  function markerFileFor(userName) {
+    return (
+      state.userMarkers[userName] ||
+      DEFAULT_USER_MARKERS[userName] ||
+      (MARKERS[0] && MARKERS[0].file)
+    );
+  }
 
   function iconFor(userName) {
-    return userName === "운석" ? ICON_WS : ICON_HM;
+    const file = markerFileFor(userName);
+    if (!iconCache.has(file)) {
+      iconCache.set(
+        file,
+        L.icon({
+          iconUrl: markerSrc(file),
+          iconSize: ICON_SIZE,
+          iconAnchor: [ICON_SIZE[0] / 2, ICON_SIZE[1]],
+          popupAnchor: [0, -ICON_SIZE[1]],
+          tooltipAnchor: [0, -ICON_SIZE[1] + 6],
+          className: "fp-marker-img",   // 비율이 다른 이미지도 찌그러지지 않게 (object-fit)
+        }),
+      );
+    }
+    return iconCache.get(file);
+  }
+
+  // 임시 마커는 현재 사용자의 마커 + .fp-temp-host 클래스로 톤 변경
+  function tempIconFor(userName) {
+    const file = markerFileFor(userName);
+    if (!tempIconCache.has(file)) {
+      tempIconCache.set(
+        file,
+        L.icon({
+          iconUrl: markerSrc(file),
+          iconSize: TEMP_ICON_SIZE,
+          iconAnchor: [TEMP_ICON_SIZE[0] / 2, TEMP_ICON_SIZE[1] - 2],
+          className: "fp-marker-img fp-temp-host",
+        }),
+      );
+    }
+    return tempIconCache.get(file);
   }
 
   // ── 지도 초기화 ─────────────────────────────────────
@@ -249,9 +297,9 @@
       badge.classList.add("user-none");
       return;
     }
-    const file = state.user === "운석" ? "ws.png" : "hm.png";
+    const file = markerFileFor(state.user);
     badge.innerHTML =
-      `<img class="user-badge-img" src="${file}" alt="" />` +
+      `<img class="user-badge-img" src="${escapeHtml(markerSrc(file))}" alt="" />` +
       `<span><b>${escapeHtml(state.user)}</b> 으로 활동 중</span>`;
     badge.classList.toggle("user-hm", state.user === "혜민");
     badge.classList.remove("user-none");
@@ -261,6 +309,7 @@
   function renderActiveUserUI() {
     const hasUser = state.user != null;
     $("#btn-add-mode").disabled = !hasUser;
+    $("#btn-change-marker").hidden = !hasUser;
     if (!hasUser && state.isAdding) {
       setAddMode(false);
     }
@@ -406,13 +455,56 @@
   }
 
   // ── Supabase CRUD ───────────────────────────────────
+  // 사용자별 마커 매핑을 DB 에서 읽어 state.userMarkers 에 반영.
+  // 테이블이 없거나 실패하면 기본값 유지. 반환값: 매핑이 바뀌었는지 여부.
+  async function loadUserMarkers() {
+    let data, error;
+    try {
+      ({ data, error } = await supa
+        .from(MARKER_TABLE)
+        .select("user_name, marker"));
+    } catch (e) {
+      error = e;
+    }
+    if (error) {
+      console.warn(
+        `[${MARKER_TABLE}] 불러오기 실패 — 기본 마커로 동작합니다. README 의 SQL 을 확인해 주세요.`,
+        error,
+      );
+      return false;
+    }
+    const next = { ...DEFAULT_USER_MARKERS };
+    (data || []).forEach((r) => {
+      if (r && r.user_name && r.marker) next[r.user_name] = r.marker;
+    });
+    const prev = state.userMarkers;
+    const keys = new Set([...Object.keys(prev), ...Object.keys(next)]);
+    const changed = [...keys].some((k) => prev[k] !== next[k]);
+    state.userMarkers = next;
+    return changed;
+  }
+
+  // 마커 매핑이 바뀌었을 때 지도/배지/임시 마커 아이콘을 갱신
+  function refreshMarkerIcons() {
+    state.markerById.forEach((m, id) => {
+      const row = state.rowById.get(id);
+      if (row) m.setIcon(iconFor(row.user_name));
+    });
+    if (state.tempMarker) state.tempMarker.setIcon(tempIconFor(state.user));
+    renderUserBadge();
+    // setIcon 으로 element 가 교체되면 강조 클래스가 빠지므로 다시 적용
+    if (state.activeId != null) setActive(state.activeId);
+  }
+
   async function loadAll() {
     setStatus("불러오는 중...");
-    const { data, error } = await supa
-      .from(TABLE)
-      .select("*")
-      .order("id", { ascending: true });
+    // 발자국과 사용자 마커 매핑을 병렬로 읽고, 둘 다 끝난 뒤 마커를 그린다.
+    const [{ data, error }] = await Promise.all([
+      supa.from(TABLE).select("*").order("id", { ascending: true }),
+      loadUserMarkers(),
+    ]);
     setStatus(null);
+    renderUserBadge();
     if (error) {
       showToast(`불러오기 실패: ${error.message}`);
       console.error(error);
@@ -499,7 +591,7 @@
   function placeTempMarker(latlng) {
     removeTempMarker();
     state.tempLatLng = latlng;
-    state.tempMarker = L.marker(latlng, { icon: ICON_TEMP }).addTo(map);
+    state.tempMarker = L.marker(latlng, { icon: tempIconFor(state.user) }).addTo(map);
     state.tempMarker.bindTooltip("새 발자국 위치", {
       direction: "top",
       offset: [0, -8],
@@ -941,6 +1033,8 @@
       renderUserBadge();
       renderActiveUserUI();
       showToast(`${target} 으로 전환됐어요`);
+      // 인증 직후 마커 고르기 화면 제시
+      openMarkerPicker();
     } else {
       $("#password-error").textContent = "비밀번호가 올바르지 않아요.";
       $("#password-error").hidden = false;
@@ -954,6 +1048,163 @@
     pendingUserSelection = null;
     renderActiveUserUI();
   });
+
+  // ── 마커 고르기 모달 ────────────────────────────────
+  // 본인이 현재 쓰는 마커 / 다른 유저가 쓰는 마커는 50% 투명 + 선택 불가.
+  // 후보 목록은 image/markers.js(window.FP_MARKERS) 기준 — 항목이 늘면 그리드가 자동 확장.
+  let markerPickSelected = null;
+
+  // file → 사용 중인 user_name (본인 포함)
+  function markerOwners() {
+    const owners = new Map();
+    Object.entries(state.userMarkers).forEach(([user, file]) => {
+      if (file) owners.set(file, user);
+    });
+    return owners;
+  }
+
+  function renderMarkerPicker() {
+    const grid = $("#marker-grid");
+    const owners = markerOwners();
+    const me = state.user;
+    let availableCount = 0;
+
+    grid.innerHTML = MARKERS.map((m) => {
+      const owner = owners.get(m.file);
+      const isMine = owner === me;
+      const isTaken = owner != null && !isMine;
+      const isLocked = isMine || isTaken;
+      if (!isLocked) availableCount++;
+      const isSelected = !isLocked && m.file === markerPickSelected;
+      const tag = isMine
+        ? `<span class="marker-tag mine">내 마커</span>`
+        : isTaken
+          ? `<span class="marker-tag taken">${escapeHtml(owner)} 사용 중</span>`
+          : "";
+      const stateLabel = isMine
+        ? " (현재 내 마커)"
+        : isTaken
+          ? ` (${owner} 사용 중)`
+          : "";
+      const cls = [
+        "marker-option",
+        isLocked ? "is-locked" : "",
+        isMine ? "is-mine" : "",
+        isSelected ? "is-selected" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      return `<button type="button" class="${cls}" role="radio"
+          data-file="${escapeHtml(m.file)}"
+          aria-checked="${isSelected}"
+          aria-label="${escapeHtml((m.name || m.file) + stateLabel)}"
+          ${isLocked ? "disabled" : ""}>
+          <span class="marker-thumb">
+            <img src="${escapeHtml(markerSrc(m.file))}" alt="" loading="lazy" />
+          </span>
+          <span class="marker-name">${escapeHtml(m.name || m.file)}</span>
+          ${tag}
+        </button>`;
+    }).join("");
+
+    const current = markerInfo(markerFileFor(me));
+    $("#marker-msg").textContent = availableCount
+      ? `'${me}' 님이 지도에 남길 마커를 골라 주세요. 지금은 '${current.name}' 마커를 쓰고 있어요.`
+      : `지금은 새로 고를 수 있는 마커가 없어요. image 폴더에 마커를 추가하면 여기에 나타나요. (현재: '${current.name}')`;
+    $("#marker-submit").disabled = !markerPickSelected;
+  }
+
+  async function openMarkerPicker() {
+    if (state.user == null) return;
+    markerPickSelected = null;
+    $("#marker-error").hidden = true;
+    renderMarkerPicker();
+    openDialog("dialog-marker");
+    // 다른 유저가 그사이 마커를 바꿨을 수 있으니 최신 매핑으로 다시 그림
+    const changed = await loadUserMarkers();
+    if (changed) {
+      refreshMarkerIcons();
+      // 고르던 마커가 방금 다른 유저에게 선점됐으면 선택 해제
+      if (markerPickSelected && markerOwners().has(markerPickSelected)) {
+        markerPickSelected = null;
+      }
+      if ($("#dialog-marker").open) renderMarkerPicker();
+    }
+  }
+
+  $("#marker-grid").addEventListener("click", (e) => {
+    const opt = e.target.closest(".marker-option");
+    if (!opt || opt.disabled) return;
+    markerPickSelected = opt.dataset.file;
+    $("#marker-error").hidden = true;
+    renderMarkerPicker();
+    // 다시 그린 뒤에도 키보드 포커스 유지
+    const again = $("#marker-grid").querySelector(
+      `.marker-option[data-file="${CSS.escape(markerPickSelected)}"]`,
+    );
+    if (again) again.focus();
+  });
+
+  $("#marker-submit").addEventListener("click", async () => {
+    const file = markerPickSelected;
+    const user = state.user;
+    if (!file || user == null) return;
+    const errEl = $("#marker-error");
+    const btn = $("#marker-submit");
+
+    // 저장 직전 최신 상태로 한 번 더 중복 확인
+    await loadUserMarkers();
+    const owner = markerOwners().get(file);
+    if (owner != null && owner !== user) {
+      markerPickSelected = null;
+      refreshMarkerIcons();
+      renderMarkerPicker();
+      errEl.textContent = `'${owner}' 님이 방금 이 마커를 선택했어요. 다른 마커를 골라 주세요.`;
+      errEl.hidden = false;
+      return;
+    }
+
+    btn.classList.add("is-busy");
+    btn.textContent = "💾 저장 중...";
+    try {
+      const { error } = await supa
+        .from(MARKER_TABLE)
+        .upsert(
+          { user_name: user, marker: file, updated_at: new Date().toISOString() },
+          { onConflict: "user_name" },
+        );
+      if (error) throw error;
+      state.userMarkers = { ...state.userMarkers, [user]: file };
+      refreshMarkerIcons();
+      closeDialog("dialog-marker");
+      showToast(`'${markerInfo(file).name}' 마커로 바꿨어요!`);
+    } catch (err) {
+      console.error(err);
+      const code = err && err.code;
+      if (code === "23505") {
+        // UNIQUE(marker) 위반 — 다른 유저가 동시에 같은 마커를 저장
+        await loadUserMarkers();
+        markerPickSelected = null;
+        refreshMarkerIcons();
+        renderMarkerPicker();
+        errEl.textContent = "다른 유저가 이미 사용 중인 마커예요. 다른 마커를 골라 주세요.";
+      } else if (code === "42P01" || code === "PGRST205") {
+        errEl.textContent = `'${MARKER_TABLE}' 테이블이 없어요. README 의 SQL 을 먼저 실행해 주세요.`;
+      } else {
+        errEl.textContent = `마커 저장 실패: ${(err && err.message) || err}`;
+      }
+      errEl.hidden = false;
+    } finally {
+      btn.classList.remove("is-busy");
+      btn.textContent = "✅ 이 마커로 변경";
+    }
+  });
+
+  document.getElementById("dialog-marker").addEventListener("close", () => {
+    markerPickSelected = null;
+  });
+
+  $("#btn-change-marker").addEventListener("click", () => openMarkerPicker());
 
   $("#btn-add-mode").addEventListener("click", () => {
     if (state.user == null) {
