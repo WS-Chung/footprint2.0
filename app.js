@@ -101,7 +101,7 @@
     );
   }
 
-  // 마커별 지도 크기 [가로, 세로] — 어피치/튜브 40×52, 나머지 44×57 (markers.js 의 size)
+  // 마커별 지도 크기 [가로, 세로] — 어피치/튜브 40×52, 나머지 50×65 (markers.js 의 size)
   function markerSizeFor(file) {
     const size = markerInfo(file).size;
     return Array.isArray(size) && size.length === 2 ? size : ICON_SIZE;
@@ -127,7 +127,7 @@
   }
 
   // 임시 마커는 현재 사용자의 마커를 10% 크게 + .fp-temp-host 클래스로 톤 변경
-  // (40×52 → 44×57, 44×57 → 48×63)
+  // (40×52 → 44×57, 50×65 → 55×72)
   function tempIconFor(userName) {
     const file = markerFileFor(userName);
     if (!tempIconCache.has(file)) {
