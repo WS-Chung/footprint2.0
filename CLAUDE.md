@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   ```
   → http://localhost:8000
 - 배포: Vercel 정적 호스팅 (`vercel.json`은 cleanUrls + `Cache-Control: max-age=0` 헤더만 설정). 빌드 명령 없음.
-- git 저장소의 루트는 이 폴더(`footprint-v2/`)이고 기본 브랜치는 `main`이다. `.gitattributes`는 `text=auto`라서 Windows(CRLF) 작업 파일도 저장소에는 LF로 들어간다.
+- git 저장소의 루트는 이 폴더(`footprint-v2/`)이고 기본 브랜치는 `main`, 원격 `origin`은 https://github.com/WS-Chung/footprint2.0 (공개)이다. 원격에는 사용자의 기존 개발 이력이 있으므로 강제 푸시하지 않는다. `.gitattributes`는 `text=auto`라서 Windows(CRLF) 작업 파일도 저장소에는 LF로 들어간다.
 
 ## 아키텍처
 
@@ -91,6 +91,6 @@ ES 모듈이 아니라 `<script>` 태그 순서에 의존한다:
 ## 알려진 불일치 / 주의사항
 
 - README는 `config.example.js`를 복사해서 `config.js`를 만들라고 하지만 `config.example.js`는 **존재하지 않는다**. 현재 `config.js`(실제 키 포함)만 있고, 그 파일 머리 주석은 템플릿용 문구 그대로다.
-- README는 `config.js`가 `.gitignore`에 있다고 하지만 실제로는 **추적 대상**이다. 정적 배포(Vercel)가 이 파일을 그대로 서빙해야 해서 의도적으로 무시 목록에 넣지 않았다. 안에는 실제 Supabase / VWorld 키가 들어 있으니 **공개 저장소에 올리기 전에 반드시 확인한다**.
+- README는 `config.js`가 `.gitignore`에 있다고 하지만 실제로는 **추적 대상**이다. 정적 배포(Vercel)가 이 파일을 그대로 서빙해야 해서 의도적으로 무시 목록에 넣지 않았다. 안에는 실제 Supabase / VWorld 키가 들어 있고, 원격 저장소(**공개 저장소**)의 이력에도 2026-06-14부터 올라가 있다. 키를 바꾸거나 새로 추가할 때 이 점을 감안한다.
 - `footprints.id`는 uuid(문자열)인데, 코드 곳곳에서 `Number(id)` 폴백 조회를 한다(v1 호환용 방어 코드로 보임).
 - 코드 주석, UI 문구, README는 모두 한국어로 작성되어 있다. 새로 작성하는 주석과 문구도 한국어로 맞춘다.
