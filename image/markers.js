@@ -9,19 +9,21 @@
      - file     : image 폴더 기준 파일명. DB(user_markers.marker)에 그대로 저장되므로
                   사용 중인 파일은 이름을 바꾸지 마세요.
      - name     : 선택 화면에 보일 캐릭터 이름
+     - size     : 지도 마커 크기 [가로, 세로] px
      - glow     : 지도에서 마커를 클릭했을 때의 후광 색 (기본) — "R, G, B"
      - glowPeak : 후광이 숨쉬듯 밝아질 때의 색 (glow 보다 조금 밝게) — "R, G, B"
 
-   이미지는 가로 1 : 세로 1.3 비율 기준 (지도 40×52, 배지 30×39, 선택 화면 50×65).
+   이미지는 가로 1 : 세로 1.3 비율 기준
+   (지도 40×52 또는 50×65, 배지 30×39, 선택 화면 50×65).
    ============================================================ */
 
 window.FP_MARKERS = [
-  // 기존
-  { file: "apeach.png",    name: "어피치",   glow: "255, 175, 205", glowPeak: "255, 200, 220" }, // 분홍색
-  { file: "tube.png",      name: "튜브",     glow: "255, 220, 150", glowPeak: "255, 240, 180" }, // 노란색
-  // 신규
-  { file: "chiikawa.png",  name: "치이카와", glow: "192, 198, 210", glowPeak: "224, 229, 238" }, // 밝은 은색
-  { file: "hachiware.png", name: "하치와레", glow: "110, 170, 255", glowPeak: "155, 200, 255" }, // 밝은 파란색
-  { file: "usagi.png",     name: "우사기",   glow: "238, 212, 165", glowPeak: "248, 230, 195" }, // 밝은 베이지색
-  { file: "momonga.png",   name: "모몽가",   glow: "170, 218, 250", glowPeak: "200, 233, 255" }, // 옅은 하늘색
+  // 기존 — 지도 40×52
+  { file: "apeach.png",    name: "어피치",   size: [40, 52], glow: "255, 175, 205", glowPeak: "255, 200, 220" }, // 분홍색
+  { file: "tube.png",      name: "튜브",     size: [40, 52], glow: "255, 220, 150", glowPeak: "255, 240, 180" }, // 노란색
+  // 신규 — 지도 50×65
+  { file: "chiikawa.png",  name: "치이카와", size: [50, 65], glow: "192, 198, 210", glowPeak: "224, 229, 238" }, // 밝은 은색
+  { file: "hachiware.png", name: "하치와레", size: [50, 65], glow: "110, 170, 255", glowPeak: "155, 200, 255" }, // 밝은 파란색
+  { file: "usagi.png",     name: "우사기",   size: [50, 65], glow: "238, 212, 165", glowPeak: "248, 230, 195" }, // 밝은 베이지색
+  { file: "momonga.png",   name: "모몽가",   size: [50, 65], glow: "170, 218, 250", glowPeak: "200, 233, 255" }, // 옅은 하늘색
 ];
