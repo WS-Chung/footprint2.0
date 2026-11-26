@@ -789,6 +789,16 @@ dialog.fp-dialog.small { width: min(380px, calc(100vw - 24px)); }
   color: #A1A7B3;
   cursor: not-allowed;
 }
+/* 인증 전 팝업 — 안내 문구만 */
+.fp-popup-locked .place { word-break: keep-all; }
+.fp-popup-locked p {
+  margin: 8px 0 0 0;
+  word-break: keep-all;
+}
+.fp-popup-locked .locked-hint {
+  font-size: 13px;
+  color: var(--muted);
+}
 .fp-popup .ownership-note {
   margin-top: 12px;
   padding: 8px 12px;

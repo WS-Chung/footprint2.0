@@ -76,6 +76,10 @@
     userMarkers: { ...DEFAULT_USER_MARKERS }, // user_name → 마커 파일명
   };
 
+  // 비밀번호로 인증된 사용자가 있을 때만 장소 내용(이름·날짜·별점·리뷰·사진)을 보여 준다.
+  // 인증 전에는 지도에 마커만 보인다. (화면 차원의 제한일 뿐 서버에서 막는 것은 아니다 — CLAUDE.md 참고)
+  const isAuthed = () => state.user != null;
+
   // 모달 안 이미지 상태 (Add / Edit 각각)
   // editItems: { type: 'existing' | 'pending', url?, file?, objectUrl? }
   let addPendingFiles = [];
@@ -348,7 +352,7 @@
   function renderUserBadge() {
     const badge = $("#user-badge");
     if (state.user == null) {
-      badge.innerHTML = "활동할 사용자를 선택해 주세요";
+      badge.innerHTML = "사용자를 선택해 인증하면<br />장소 내용을 볼 수 있어요";
       badge.classList.remove("user-hm");
       badge.classList.add("user-none");
       return;
@@ -427,6 +431,14 @@
 
   // ── 팝업 HTML ──────────────────────────────────────
   function popupHtml(row) {
+    // 인증 전에는 row 의 어떤 값도 넣지 않고 안내 문구만 보여 준다
+    if (!isAuthed()) {
+      return `<div class="fp-popup fp-popup-locked">
+        <div class="place">사용자 인증이 필요해요</div>
+        <p class="locked-msg">사용자 인증을 해야 장소 내용을 볼 수 있어요.</p>
+        <p class="locked-hint">왼쪽 위 메뉴 버튼에서 사용자를 선택하고 비밀번호 4자리를 입력해 주세요.</p>
+      </div>`;
+    }
     const isWs = row.user_name === "운석";
     const rating = Math.min(5, Math.max(0, Number(row.rating || 0)));
     const stars = rating
@@ -470,19 +482,42 @@
   }
 
   // ── 마커 추가 / 갱신 / 제거 ──────────────────────────
+  // 장소 이름은 브라우저 기본 툴팁(title)과 호버 툴팁 두 군데로 보이므로,
+  // 인증 전에는 둘 다 비우고 인증하면 둘 다 채운다.
+  function labelMarker(marker, row) {
+    const name = isAuthed() ? row.place_name || "" : "";
+    marker.options.title = name;                       // 아이콘이 새로 만들어질 때(setIcon 등)도 반영
+    const el = marker.getElement();
+    if (el) {
+      if (name) el.setAttribute("title", name);
+      else el.removeAttribute("title");
+    }
+    marker.unbindTooltip();
+    if (name) {
+      marker.bindTooltip(name, {
+        direction: "top",
+        offset: [0, -8],
+        opacity: 1,
+        permanent: false,
+        sticky: false,
+        interactive: false,
+      });
+    }
+  }
+
+  // 인증 상태가 바뀌었을 때 이미 그려진 마커들의 이름 표시를 맞춘다 (마커를 다시 만들지 않으므로 열린 팝업이 유지됨)
+  function refreshMarkerLabels() {
+    state.markerById.forEach((m, id) => {
+      const row = state.rowById.get(id);
+      if (row) labelMarker(m, row);
+    });
+  }
+
   function addMarker(row) {
     const marker = L.marker([row.lat, row.lng], {
       icon: iconFor(row.user_name),
-      title: row.place_name || "",
     });
-    marker.bindTooltip(row.place_name || "", {
-      direction: "top",
-      offset: [0, -8],
-      opacity: 1,
-      permanent: false,
-      sticky: false,
-      interactive: false,
-    });
+    labelMarker(marker, row);
     // 좁은 화면(아이폰 13 mini 등)에서는 화면 폭에 맞춰 줄이고,
     // 자동 이동 시 좌상단 햄버거 버튼에 가리지 않게 위쪽 여백을 더 준다.
     marker.bindPopup(() => popupHtml(row), {
@@ -1095,6 +1130,7 @@
     if (target && USER_PASSWORDS[target] === pw) {
       state.user = target;
       pendingUserSelection = null;
+      refreshMarkerLabels();           // 인증됐으니 장소 이름 툴팁을 켠다 (열려 있던 팝업은 아래 renderActiveUserUI 가 내용 갱신)
       closeDialog("dialog-password");
       renderUserBadge();
       renderActiveUserUI();

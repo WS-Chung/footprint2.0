@@ -70,6 +70,8 @@ ES 모듈이 아니라 `<script>` 태그 순서에 의존한다:
 
 - 사용자 전환은 라디오 선택 → 비밀번호 모달(`USER_PASSWORDS`, 클라이언트에 하드코딩). 코드 주석에도 적혀 있듯이 **보안 목적이 아닌 재미 요소**다.
 - "본인 발자국만 수정·삭제"는 `row.user_name === state.user` 비교로 **클라이언트에서만** 검사한다.
+- **인증 전에는 마커만 보인다.** `isAuthed()`(= `state.user != null`)가 거짓이면 `popupHtml`은 row 값을 하나도 쓰지 않고 안내 문구만 반환한다. 장소 이름이 드러나는 두 군데(마커 `title`, 호버 툴팁)는 `labelMarker()`가 비운다. 인증 상태가 바뀌면 `refreshMarkerLabels()`가 이미 그려진 마커를 갱신하고(마커를 다시 만들지 않아 열린 팝업이 유지됨), 열려 있던 팝업은 `renderActiveUserUI()`가 `popupHtml`로 다시 채운다. 장소 정보를 화면에 내보내는 UI(목록, 검색, 툴팁 등)를 새로 만들면 반드시 `isAuthed()`로 감싼다.
+- 이 잠금은 **화면 차원일 뿐 보안이 아니다.** `loadAll()`은 인증 전에도 `footprints` 전체를 읽어 오고(RLS가 select를 모두 허용), 비밀번호(`USER_PASSWORDS`)는 공개 저장소의 `app.js`에 그대로 있다. 진짜 접근 제한이 필요하면 Supabase Auth + RLS로 서버에서 막아야 한다.
 - 두 사용자 이름이 여러 곳에 하드코딩되어 있어서, 사용자를 추가·변경하려면 다음을 모두 고쳐야 한다:
   `index.html` 라디오, `USER_PASSWORDS`, `DEFAULT_USER_MARKERS`, `renderActiveUserUI`(`body[data-user]`를 `ws`/`hm`으로 매핑), `renderUserBadge`(`user-hm` 클래스), `popupHtml`(`운석`이 아니면 모두 혜민 스타일), `style.css`의 `body[data-user="ws"|"hm"]` 테마, README의 `user_markers` 초기 INSERT.
 
