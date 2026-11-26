@@ -44,6 +44,13 @@ ES 모듈이 아니라 `<script>` 태그 순서에 의존한다:
 - 팝업 HTML은 문자열로 생성(`popupHtml`)하며, 팝업 안 수정/삭제 버튼과 썸네일 클릭은 `document.body`의 **이벤트 위임**으로 처리한다. 사용자 입력을 HTML에 넣을 때는 `escapeHtml`을 사용한다.
 - 모달은 전부 네이티브 `<dialog>`이며 `[data-close="<dialog id>"]` 버튼이 자동으로 닫기에 바인딩된다.
 
+### 화면 구성 (전체 화면 지도 + 드로어)
+
+- `<main class="map-area">`가 화면 전체(`position: fixed; inset: 0`)이고, 좌측 사이드바는 없다. 지도 위에는 햄버거 버튼(`#btn-menu`)과 상태 표시줄(`#map-status`)만 떠 있다. Leaflet 기본 줌 컨트롤은 끄고 우하단에 따로 붙였다(좌상단은 햄버거 자리).
+- 사용자 선택 / 새 발자국 등록 / 마커 바꾸기는 모두 슬라이드 메뉴 `#drawer` 안에 있다. `setDrawer(open)`이 열고 닫으며(클래스 `is-open`, 스크림 클릭 / X / ESC로 닫힘), 열려 있는 동안 `.map-area`를 `inert`로 만들어 뒤쪽 접근을 막는다. 포커스는 **키보드로 조작했을 때만** 옮긴다(터치·마우스에서 포커스 링이 뜨지 않게).
+- 등록 모드(`setAddMode(true)`)는 드로어를 닫고, 상태 표시줄에 안내 문구와 `#btn-cancel-add`(취소)를 보여 준다. 모바일에는 ESC가 없어서 이 취소 버튼이 유일한 종료 수단이므로, 등록 모드 흐름을 바꿀 때 이 버튼을 유지한다.
+- 모바일(아이폰 13 mini 375px)을 기준으로 잡은 값: 지도 위 컨트롤은 44px 터치 타깃, 입력창은 `font-size: 16px`(iOS가 포커스 시 화면을 확대하지 않게), 팝업 `maxWidth`는 화면 폭에 맞춰 계산, 팝업 자동 이동 시 위쪽 여백(`autoPanPaddingTopLeft`)으로 햄버거 버튼과 겹치지 않게 한다.
+
 ### Supabase
 
 - 테이블 `footprints`: `id uuid, user_name, lat, lng, place_name, visit_date, review varchar(50), rating 1~5, image_url, created_at`. 전체 SQL은 `README.md` 참고.
@@ -76,8 +83,10 @@ ES 모듈이 아니라 `<script>` 태그 순서에 의존한다:
 
 ### 테마 (`style.css`)
 
-- 색은 모두 CSS 변수 토큰이다. `:root`는 사용자를 선택하지 않은 상태(아이보리+모카), `body[data-user="ws"]`는 하늘색, `body[data-user="hm"]`는 분홍색으로 토큰을 덮어쓴다. JS는 `data-user` 속성만 바꾼다.
-- 폰트: Quicksand / Pretendard(본문), Dongle(툴팁 손글씨 스타일). 모두 CDN에서 불러온다.
+- 색은 모두 CSS 변수 토큰이다. `:root`는 사용자를 선택하지 않은 상태(무채색, 포인트 색 `--accent`는 거의 검정)이고, `body[data-user="ws"]`는 파랑, `body[data-user="hm"]`는 분홍으로 `--accent*` 토큰만 덮어쓴다. JS는 `data-user` 속성만 바꾼다. 팝업은 현재 사용자와 무관하게 작성자 색(`--ws` / `--hm`)을 쓴다.
+- **폰트는 SUIT 하나만** 쓴다(`font-family: "SUIT", sans-serif`, jsDelivr CDN의 `SUIT.css`). 제목 등의 강조는 폰트를 바꾸지 말고 **크기와 굵기로만** 한다. Leaflet 기본 요소(툴팁, 줌 컨트롤, 클러스터)와 `button`/`input`은 기본 폰트를 따로 지정해서 덮어쓰고 있다.
+- 디자인 규칙: 하트 배경 패턴은 없애고 평평한 배경을 쓴다. 테두리는 1px 연한 회색, 모서리는 8~16px, 버튼은 단색(그라디언트 없음). `[hidden]`은 `display: none !important`로 전역 처리돼 있어서 `.btn.block` 같은 `display` 지정이 `hidden` 속성을 덮어쓰지 않는다.
+- **UI 문구(HTML, `app.js`의 토스트·버튼·오류 메시지)에는 이모지를 쓰지 않는다.** 별점은 이모지가 아닌 텍스트 글리프 `★`만 쓴다. 아이콘이 필요하면 CSS(막대, SVG 데이터 URI)로 그린다.
 
 ## 알려진 불일치 / 주의사항
 

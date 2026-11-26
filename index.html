@@ -3,17 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>우리 발자국 👣</title>
+  <title>우리 발자국</title>
 
-  <!-- Google Fonts — Dongle(가벼운 라운드 한글) + Quicksand(라운드 영문) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- SUIT (수트) — 전 영역 단일 폰트. font-family: 'SUIT' -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Dongle:wght@300;400;700&family=Quicksand:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
-  <link
-    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css"
     rel="stylesheet"
   />
 
@@ -37,17 +32,41 @@
 </head>
 
 <body>
-  <div class="layout">
-    <!-- 좌측 메뉴 (타이틀 포함, 지도와 같은 높이) -->
-    <aside class="menu">
+  <!-- 지도 (화면 전체) + 지도 위 컨트롤 -->
+  <main class="map-area">
+    <div id="map"></div>
+
+    <button
+      type="button"
+      id="btn-menu"
+      class="menu-toggle"
+      aria-label="메뉴 열기"
+      aria-controls="drawer"
+      aria-expanded="false"
+    >
+      <span class="menu-toggle-bars" aria-hidden="true"></span>
+    </button>
+
+    <!-- 상태 표시줄 (불러오는 중 / 등록 모드 안내 + 취소) -->
+    <div id="map-status" class="map-status" role="status" hidden>
+      <span id="map-status-text"></span>
+      <button type="button" id="btn-cancel-add" class="btn btn-sm" hidden>취소</button>
+    </div>
+  </main>
+
+  <!-- 슬라이드 메뉴 (햄버거 버튼으로만 열림) -->
+  <div id="drawer-scrim" class="drawer-scrim"></div>
+  <aside id="drawer" class="drawer" aria-label="메뉴">
+    <header class="drawer-head">
       <div class="brand">
-        <div class="brand-title">👣 우리 발자국</div>
+        <div class="brand-title">우리 발자국</div>
         <div class="brand-sub">우리가 남긴 발자국</div>
       </div>
+      <button type="button" id="btn-drawer-close" class="icon-btn" aria-label="메뉴 닫기">×</button>
+    </header>
 
-      <hr class="divider" />
-
-      <section>
+    <div class="drawer-body">
+      <section class="drawer-section">
         <div class="label">나는 누구?</div>
         <div class="user-radio" role="radiogroup" aria-label="유저 선택">
           <label>
@@ -62,42 +81,23 @@
         <div id="user-badge" class="user-badge"></div>
       </section>
 
-      <hr class="divider" />
-
-      <section>
-        <button id="btn-add-mode" class="btn primary block">📍 새 발자국 등록</button>
-        <button id="btn-change-marker" class="btn block btn-change-marker" type="button" hidden>
-          🎨 내 마커 바꾸기
-        </button>
-        <div id="add-hint" class="add-hint" hidden>
-          🗺️ 지도를 클릭해서 위치를 선택해 주세요.<br />
-          클릭한 자리에서 입력 팝업이 열려요.
-          <button id="btn-cancel-add" class="btn block" style="margin-top: 8px;">
-            ❌ 등록 모드 종료
-          </button>
-        </div>
+      <section class="drawer-section drawer-actions">
+        <button type="button" id="btn-add-mode" class="btn primary block">새 발자국 등록</button>
+        <button type="button" id="btn-change-marker" class="btn block" hidden>내 마커 바꾸기</button>
       </section>
 
-      <hr class="divider" />
-
       <p class="fp-tip">
-        🛈 지도 위의 캐릭터를 클릭하면 정보 팝업이 뜨고, 본인이 등록한 발자국은
+        지도 위의 캐릭터를 클릭하면 정보 팝업이 뜨고, 본인이 등록한 발자국은
         거기서 수정·삭제할 수 있어요.
       </p>
-    </aside>
-
-    <!-- 우측 지도 -->
-    <main class="map-area">
-      <div id="map"></div>
-      <div id="map-status" class="map-status" hidden></div>
-    </main>
-  </div>
+    </div>
+  </aside>
 
   <!-- 추가 모달 -->
   <dialog id="dialog-add" class="fp-dialog">
     <form id="form-add" method="dialog">
       <header class="fp-dialog-head">
-        <h2>📍 새 발자국 등록</h2>
+        <h2>새 발자국 등록</h2>
         <button type="button" class="x" data-close="dialog-add" aria-label="닫기">×</button>
       </header>
       <p id="add-coord" class="caption"></p>
@@ -116,14 +116,14 @@
       </label>
 
       <div class="image-block">
-        <div class="label">📷 사진 <span class="hint">(최대 4장 · 정사각 400px 자동 압축)</span></div>
+        <div class="label">사진 <span class="hint">(최대 4장 · 정사각 400px 자동 압축)</span></div>
         <div class="image-grid" id="add-image-grid"></div>
         <input type="file" id="add-image-input" accept="image/*" multiple hidden />
         <button type="button" class="btn block" id="add-image-add-btn">+ 사진 추가</button>
       </div>
 
       <div class="rating-block">
-        <div class="label">⭐ 별점 *</div>
+        <div class="label">별점 *</div>
         <div class="rating" data-name="rating" role="radiogroup" aria-label="별점 선택">
           <button type="button" data-value="1">★</button>
           <button type="button" data-value="2">★</button>
@@ -137,7 +137,7 @@
 
       <footer class="fp-dialog-foot">
         <button type="button" class="btn" data-close="dialog-add">취소</button>
-        <button type="submit" class="btn primary" id="add-submit">💾 저장</button>
+        <button type="submit" class="btn primary" id="add-submit">저장</button>
       </footer>
     </form>
   </dialog>
@@ -146,7 +146,7 @@
   <dialog id="dialog-edit" class="fp-dialog">
     <form id="form-edit" method="dialog">
       <header class="fp-dialog-head">
-        <h2>✏️ 발자국 수정</h2>
+        <h2>발자국 수정</h2>
         <button type="button" class="x" data-close="dialog-edit" aria-label="닫기">×</button>
       </header>
       <p id="edit-coord" class="caption"></p>
@@ -165,14 +165,14 @@
       </label>
 
       <div class="image-block">
-        <div class="label">📷 사진 <span class="hint">(최대 4장 · 정사각 400px 자동 압축)</span></div>
+        <div class="label">사진 <span class="hint">(최대 4장 · 정사각 400px 자동 압축)</span></div>
         <div class="image-grid" id="edit-image-grid"></div>
         <input type="file" id="edit-image-input" accept="image/*" multiple hidden />
         <button type="button" class="btn block" id="edit-image-add-btn">+ 사진 추가</button>
       </div>
 
       <div class="rating-block">
-        <div class="label">⭐ 별점 *</div>
+        <div class="label">별점 *</div>
         <div class="rating" data-name="rating" role="radiogroup" aria-label="별점 선택">
           <button type="button" data-value="1">★</button>
           <button type="button" data-value="2">★</button>
@@ -186,7 +186,7 @@
 
       <footer class="fp-dialog-foot">
         <button type="button" class="btn" data-close="dialog-edit">취소</button>
-        <button type="submit" class="btn primary" id="edit-submit">💾 저장</button>
+        <button type="submit" class="btn primary" id="edit-submit">저장</button>
       </footer>
     </form>
   </dialog>
@@ -194,14 +194,14 @@
   <!-- 삭제 모달 -->
   <dialog id="dialog-delete" class="fp-dialog small">
     <header class="fp-dialog-head">
-      <h2>🗑 발자국 삭제</h2>
+      <h2>발자국 삭제</h2>
       <button type="button" class="x" data-close="dialog-delete" aria-label="닫기">×</button>
     </header>
     <p id="delete-msg"></p>
     <p class="hint">이 작업은 되돌릴 수 없어요.</p>
     <footer class="fp-dialog-foot">
       <button type="button" class="btn" data-close="dialog-delete">취소</button>
-      <button type="button" class="btn danger" id="btn-confirm-delete">✅ 삭제</button>
+      <button type="button" class="btn danger" id="btn-confirm-delete">삭제</button>
     </footer>
   </dialog>
 
@@ -209,7 +209,7 @@
   <dialog id="dialog-password" class="fp-dialog small">
     <form id="form-password" method="dialog">
       <header class="fp-dialog-head">
-        <h2 id="password-title">🔒 비밀번호</h2>
+        <h2 id="password-title">비밀번호</h2>
         <button type="button" class="x" data-close="dialog-password" aria-label="닫기">×</button>
       </header>
       <p id="password-msg" class="caption"></p>
@@ -233,7 +233,7 @@
   <!-- 마커 선택 모달 ('내 마커 바꾸기' 버튼으로만 열림) -->
   <dialog id="dialog-marker" class="fp-dialog">
     <header class="fp-dialog-head">
-      <h2>🎨 내 마커 고르기</h2>
+      <h2>내 마커 고르기</h2>
       <button type="button" class="x" data-close="dialog-marker" aria-label="닫기">×</button>
     </header>
     <p id="marker-msg" class="caption"></p>
@@ -242,7 +242,7 @@
     <div class="error-msg" id="marker-error" hidden></div>
     <footer class="fp-dialog-foot">
       <button type="button" class="btn" data-close="dialog-marker">취소</button>
-      <button type="button" class="btn primary" id="marker-submit">✅ 이대로 사용</button>
+      <button type="button" class="btn primary" id="marker-submit">이대로 사용</button>
     </footer>
   </dialog>
 

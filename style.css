@@ -1,430 +1,634 @@
 /* ─────────────────────────────────────────────────────────
-   Theme tokens — 사용자별로 색감이 바뀐다
+   Theme tokens
+   - 기본(사용자 미선택)은 무채색, 사용자를 고르면 body[data-user] 로 포인트 색만 바뀐다.
+   - 폰트는 SUIT 하나만 쓰고, 강조는 크기와 굵기로만 한다.
    ───────────────────────────────────────────────────────── */
 :root {
-  /* 무선택(열람 모드) — 따뜻한 아이보리 + 모카 */
-  --bg-top:        #FBF7F2;
-  --bg-bot:        #F6EDE3;
-  --card-bg:       #FFFFFF;
-  --card-border:   #EDE3D6;
-  --divider:       #F2EAE0;
-  --text:          #3F3328;
-  --muted:         #8B7B68;
-  --primary:       #D9B8A2;
-  --primary-hover: #CCA589;
-  --accent-ws:     #E8CCBE;
-  --accent-hm:     #B58E73;
-  --danger:        #C77C66;
-  --warning-bg:    #FBEFD8;
-  --disabled:      #E2D9CC;
-  --info-bg:       #FBF1E6;
-  --map-border:    #E5C9B6;
-  --map-border-active: #B58E73;
+  --font: "SUIT", sans-serif;
+
+  --bg:            #F5F6F8;
+  --surface:       #FFFFFF;
+  --surface-2:     #F3F4F6;
+  --border:        #E4E6EB;
+  --border-strong: #D0D4DB;
+  --text:          #14161A;
+  --muted:         #6B7280;
+  --danger:        #D92D20;
+  --danger-soft:   #FEF3F2;
+  --danger-line:   #FECDCA;
+  --danger-text:   #B42318;
+  --star-on:       #F5A524;
+  --star-off:      #D5D8DE;
+
+  /* 포인트 색 — 사용자 미선택 */
+  --accent:        #14161A;
+  --accent-hover:  #2B2F36;
+  --accent-soft:   #F3F4F6;
+  --accent-line:   #E4E6EB;
+  --accent-ring:   rgba(20, 22, 26, 0.16);
+
+  /* 사용자 고유 색 (팝업 등 현재 사용자와 무관하게 쓰임) */
+  --ws:            #2563EB;
+  --ws-soft:       #EFF5FF;
+  --hm:            #D6336C;
+  --hm-soft:       #FFF0F5;
+
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 2px 8px rgba(16, 24, 40, 0.10), 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-lg: 0 16px 48px rgba(16, 24, 40, 0.20);
+
+  --gap: 12px;                           /* 지도 위 컨트롤 바깥 여백 */
+  --ctl: 44px;                           /* 지도 위 컨트롤 크기 (터치 타깃) */
 }
 
-/* 운석 — 하늘색 톤 */
+/* 운석 — 파랑 */
 body[data-user="ws"] {
-  --bg-top:        #F2F8FD;
-  --bg-bot:        #DCEAF6;
-  --card-border:   #D2E1EE;
-  --divider:       #E2EDF6;
-  --primary:       #8FB7DA;
-  --primary-hover: #7BA8CC;
-  --info-bg:       #EAF3FA;
-  --map-border:    #B0CCE5;
-  --map-border-active: #5C8DB8;
-  --text:          #2B3A4A;
-  --muted:         #6E8499;
+  --accent:        #2563EB;
+  --accent-hover:  #1D4ED8;
+  --accent-soft:   #EFF5FF;
+  --accent-line:   #CFE0FF;
+  --accent-ring:   rgba(37, 99, 235, 0.20);
 }
 
-/* 혜민 — 분홍색 톤 */
+/* 혜민 — 분홍 */
 body[data-user="hm"] {
-  --bg-top:        #FBF2F6;
-  --bg-bot:        #F6E1EB;
-  --card-border:   #EDD2DC;
-  --divider:       #F2E0E8;
-  --primary:       #D8A1B6;
-  --primary-hover: #C88EA8;
-  --info-bg:       #FBE6EE;
-  --map-border:    #E5B5C8;
-  --map-border-active: #B57692;
-  --text:          #4A2E3C;
-  --muted:         #957585;
+  --accent:        #D6336C;
+  --accent-hover:  #BE2A5E;
+  --accent-soft:   #FFF0F5;
+  --accent-line:   #FAD0DF;
+  --accent-ring:   rgba(214, 51, 108, 0.20);
 }
 
-/* SVG 하트 패턴 — 약한 베이지로 그대로 두되, 테마 위에서 자연스럽게 비침 */
-:root {
-  --heart-pattern: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'56'%20height%3D'56'%20viewBox%3D'0%200%2056%2056'%3E%3Cg%20fill%3D'%23E5C9B6'%20fill-opacity%3D'0.18'%3E%3Cpath%20d%3D'M14%2018.5c0-2.6%202.1-4.7%204.7-4.7%201.7%200%203.2.9%204%202.3.8-1.4%202.3-2.3%204-2.3%202.6%200%204.7%202.1%204.7%204.7%200%204.5-8.7%209-8.7%209s-8.7-4.5-8.7-9z'%2F%3E%3Cpath%20d%3D'M40%2040c0-1.7%201.4-3.1%203.1-3.1%201.1%200%202.1.6%202.6%201.5.5-.9%201.5-1.5%202.6-1.5%201.7%200%203.1%201.4%203.1%203.1%200%202.9-5.7%205.9-5.7%205.9s-5.7-3-5.7-5.9z'%20opacity%3D'0.7'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
-}
-
-* {
+*, *::before, *::after {
   box-sizing: border-box;
 }
+
+/* .btn.block 같은 display 지정이 hidden 속성을 덮어쓰지 않도록 */
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
   padding: 0;
-  font-family: "Quicksand", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  height: 100%;
+}
+body {
+  font-family: var(--font);
+  font-size: 15px;
   font-weight: 500;
+  line-height: 1.5;
   color: var(--text);
-  background:
-    var(--heart-pattern) repeat,
-    linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bot) 100%);
-  background-size: 56px 56px, auto;
-  background-attachment: fixed;
-  min-height: 100vh;
-  transition: background 220ms ease;
+  background: var(--bg);
+  overflow: hidden;                      /* 화면 전체가 지도 — 페이지 스크롤 없음 */
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, textarea, select {
+  font-family: inherit;
 }
 
-/* ─── Top bar (제거됨 — 타이틀은 메뉴 안으로 이동) ─── */
-
-.brand {
-  margin-bottom: 6px;
-}
-.brand-title {
-  font-family: "Dongle", "Quicksand", "Pretendard", sans-serif;
-  font-size: 2.2rem;
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: 0.5px;
-  color: var(--text);
-}
-.brand-sub {
-  font-family: "Dongle", "Quicksand", "Pretendard", sans-serif;
-  color: var(--muted);
-  font-size: 1.2rem;
-  font-weight: 400;
-  margin-top: -4px;
-}
-
-/* ─── Layout ─────────────────────────────────────────── */
-.layout {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  align-items: stretch;          /* 메뉴와 지도 같은 높이로 늘리기 */
-  gap: 24px;
-  padding: 24px 24px 24px 24px;
-  max-width: 1480px;
-  margin: 0 auto;
-}
-.menu {
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid var(--card-border);
-  border-radius: 18px;
-  padding: 18px;
-  box-shadow: 0 4px 18px rgba(189, 153, 122, 0.10);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  height: 640px;                 /* 지도 높이와 동일 */
-  overflow-y: auto;
-  transition: background 220ms ease, border-color 220ms ease;
-}
+/* ─── 지도 / 레이아웃 ─────────────────────────────────── */
 .map-area {
-  position: relative;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
 }
-
 #map {
-  width: 100%;
-  height: 640px;
-  border-radius: 22px;
-  border: 2px solid var(--map-border);
-  box-shadow: 0 6px 24px rgba(189, 153, 122, 0.18);
-  background: var(--card-bg);
-  overflow: hidden;
-  transition:
-    border-color 200ms ease,
-    border-width 160ms ease,
-    box-shadow   200ms ease;
+  position: absolute;
+  inset: 0;
+  background: var(--surface-2);
 }
 
-/* 등록 모드 — 지도 테두리 강조 (두께 1.5배 + 강한 톤 + 부드러운 펄스) */
-#map.is-adding {
-  border-width: 4px;
-  border-color: var(--map-border-active);
-  box-shadow:
-    0 0 0 3px rgba(0, 0, 0, 0.0),
-    0 6px 24px rgba(120, 86, 60, 0.22);
+/* 등록 모드 — 지도 가장자리에 포인트 색 테두리가 은은하게 깜빡임 */
+#map.is-adding::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  border: 3px solid var(--accent);
+  pointer-events: none;
   animation: fp-add-pulse 1.6s ease-in-out infinite;
 }
 @keyframes fp-add-pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 0 3px rgba(0, 0, 0, 0.0),
-      0 6px 24px rgba(120, 86, 60, 0.22);
-  }
-  50% {
-    box-shadow:
-      0 0 0 6px rgba(0, 0, 0, 0.0),
-      0 8px 28px rgba(120, 86, 60, 0.32);
-  }
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 0.30; }
+}
+
+/* ─── 지도 위 컨트롤: 햄버거 버튼 / 상태 표시줄 ────────── */
+.menu-toggle {
+  position: absolute;
+  top:  calc(var(--gap) + env(safe-area-inset-top));
+  left: calc(var(--gap) + env(safe-area-inset-left));
+  z-index: 1100;
+  width: var(--ctl);
+  height: var(--ctl);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: background 140ms ease, transform 80ms ease;
+}
+.menu-toggle:hover { background: var(--surface-2); }
+.menu-toggle:active { transform: scale(0.96); }
+.menu-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 햄버거 막대 3개 (이모지/아이콘 폰트 없이 CSS 로만) */
+.menu-toggle-bars {
+  width: 18px;
+  height: 14px;
+  background:
+    linear-gradient(currentColor, currentColor) top    / 100% 2px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat,
+    linear-gradient(currentColor, currentColor) bottom / 100% 2px no-repeat;
 }
 
 .map-status {
   position: absolute;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--info-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
-  padding: 10px 18px;
-  color: var(--text);
-  font-family: "Dongle", "Quicksand", "Pretendard", sans-serif;
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  z-index: 500;
-  pointer-events: none;
-  box-shadow: 0 4px 14px rgba(120, 86, 60, 0.18);
-}
-
-/* ─── Menu pieces ─────────────────────────────────────── */
-.label {
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-.user-radio {
-  display: flex;
-  gap: 14px;
-}
-.user-radio label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-.user-radio input[type="radio"] {
-  accent-color: var(--primary);
-}
-.user-badge {
-  margin-top: 10px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: var(--info-bg);
-  font-family: "Dongle", "Quicksand", "Pretendard", sans-serif;
-  font-size: 1.45rem;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  border-left: 4px solid var(--accent-ws);
+  top:  calc(var(--gap) + env(safe-area-inset-top));
+  left: calc(var(--gap) + var(--ctl) + 8px + env(safe-area-inset-left));
+  max-width: calc(100% - var(--gap) * 2 - var(--ctl) - 8px - env(safe-area-inset-left) - env(safe-area-inset-right));
+  z-index: 1100;
+  height: var(--ctl);
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+}
+.map-status:has(.btn-sm:not([hidden])) { padding-right: 6px; }
+#map-status-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── 슬라이드 메뉴 (드로어) ──────────────────────────── */
+.drawer-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 17, 21, 0.40);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 220ms ease, visibility 0s linear 220ms;
+}
+.drawer-scrim.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1300;
+  width: min(320px, 86vw);
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(-100%);
+  visibility: hidden;                    /* 닫힌 동안 포커스/스크린리더에서도 제외 */
+  transition: transform 260ms cubic-bezier(0.22, 0.8, 0.24, 1), visibility 0s linear 260ms;
+}
+.drawer.is-open {
+  transform: translateX(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 16px 18px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.brand-title {
+  font-size: 24px;
+  font-weight: 800;
   line-height: 1.2;
-  transition: background 220ms ease, border-color 220ms ease;
+  letter-spacing: -0.02em;
 }
-.user-badge.user-hm {
-  border-left-color: var(--accent-hm);
-}
-.user-badge.user-none {
-  background: rgba(255, 255, 255, 0.6);
+.brand-sub {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--muted);
-  border-left-color: var(--card-border);
+}
+.icon-btn {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 24px;
   font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+.icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.drawer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.drawer .label {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+/* 사용자 선택 — 세그먼트 컨트롤 (실제 라디오는 투명하게 덮어 접근성 유지) */
+.user-radio {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.user-radio label {
+  position: relative;
+  display: block;
+  margin: 0;
+}
+.user-radio input[type="radio"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.user-radio span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+.user-radio input:checked + span {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm), 0 0 0 1px var(--border);
+}
+.user-radio input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.user-badge {
+  margin-top: 10px;
+  min-height: 52px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  transition: background 200ms ease, border-color 200ms ease;
+}
+.user-badge b { font-weight: 700; }
+.user-badge.user-none {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--muted);
 }
 .user-badge .user-badge-img {
-  width: 30px;                   /* 마커 비율 1 : 1.3 */
+  width: 30px;                           /* 마커 비율 1 : 1.3 */
   height: 39px;
   object-fit: contain;
   flex: 0 0 auto;
   display: block;
 }
 
-.divider {
-  border: none;
-  border-top: 1px solid var(--divider);
-  margin: 14px 0;
-}
-
 .fp-tip {
-  font-family: "Quicksand", "Pretendard", "Noto Sans KR", sans-serif;
-  font-size: 0.92rem;
-  font-weight: 500;
-  color: var(--muted);
-  line-height: 1.55;
   margin: 0;
-}
-
-.add-hint {
-  background: var(--info-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 10px 12px;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--muted);
 }
 
 /* ─── Buttons ─────────────────────────────────────────── */
 .btn {
-  border-radius: 12px;
-  border: 1px solid var(--card-border);
-  background: var(--card-bg);
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
   color: var(--text);
-  padding: 9px 14px;
-  font: inherit;
+  font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease, transform 80ms ease;
 }
-.btn:hover { background: var(--divider); border-color: var(--primary); }
+.btn:hover { background: var(--surface-2); }
 .btn:active { transform: translateY(1px); }
-.btn:disabled { background: var(--disabled); border-color: var(--disabled); color: #fff; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn:disabled {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: #A1A7B3;
+  cursor: not-allowed;
+  transform: none;
+}
 
 .btn.primary {
-  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-hover) 100%);
-  border-color: var(--primary-hover);
-  color: #FFFDFB;
-  box-shadow: 0 3px 10px rgba(189, 153, 122, 0.28);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #FFFFFF;
 }
-.btn.primary:hover { filter: brightness(1.03); }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn.primary:disabled {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: #A1A7B3;
+}
 
 .btn.danger {
   background: var(--danger);
   border-color: var(--danger);
-  color: #fff;
+  color: #FFFFFF;
+}
+.btn.danger:hover { background: #B42318; border-color: #B42318; }
+
+.btn.btn-sm {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 13px;
 }
 
 .btn.block { display: block; width: 100%; }
 
-/* ─── Inputs ──────────────────────────────────────────── */
-input[type="text"], input[type="date"], textarea {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--card-border);
-  background: #FFFDFA;
-  padding: 8px 10px;
-  font: inherit;
-  color: var(--text);
-}
-input:focus, textarea:focus {
-  border-color: var(--primary);
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(217, 184, 162, 0.25);
+/* 저장/업로드 진행 중 비활성 */
+.btn.is-busy {
+  opacity: 0.65;
+  pointer-events: none;
 }
 
-label {
+/* ─── Inputs ──────────────────────────────────────────── */
+input[type="text"], input[type="date"], input[type="password"], textarea {
   display: block;
-  margin-bottom: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 16px;                       /* 16px 미만이면 iOS Safari 가 포커스 시 화면을 확대함 */
+  font-weight: 500;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+textarea { resize: vertical; line-height: 1.5; }
+input::placeholder, textarea::placeholder { color: #A1A7B3; }
+input:focus, textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.fp-dialog label {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
-label .hint { color: var(--muted); font-weight: 400; }
+.fp-dialog label input,
+.fp-dialog label textarea {
+  margin-top: 6px;
+}
+label .hint { color: var(--muted); font-weight: 500; }
 
 /* ─── Rating ──────────────────────────────────────────── */
-.rating-block { margin: 8px 0 12px 0; }
+.rating-block { margin: 6px 0 14px 0; }
 .rating {
   display: inline-flex;
   gap: 2px;
 }
 .rating button {
+  padding: 0 3px;
   background: none;
   border: none;
-  font-size: 26px;
-  color: #DCD3C2;
+  font-size: 30px;
+  line-height: 1.2;
+  color: var(--star-off);
   cursor: pointer;
-  padding: 0 2px;
-  line-height: 1;
   transition: color 100ms ease, transform 100ms ease;
 }
-.rating button.on { color: #E0A546; }
+.rating button.on { color: var(--star-on); }
 .rating button:hover { transform: scale(1.1); }
+.rating button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
 /* ─── Dialog ──────────────────────────────────────────── */
 dialog.fp-dialog {
-  border: 1px solid var(--card-border);
-  border-radius: 20px;
-  background: linear-gradient(180deg, #FFFDFA 0%, #FBF1E6 100%);
-  padding: 18px 20px 16px 20px;
-  width: min(440px, 92vw);
-  box-shadow: 0 18px 60px rgba(120, 86, 60, 0.18);
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
   color: var(--text);
+  box-shadow: var(--shadow-lg);
 }
 dialog.fp-dialog::backdrop {
-  background: rgba(63, 51, 40, 0.18);
-  backdrop-filter: blur(2px);
+  background: rgba(15, 17, 21, 0.42);
 }
-dialog.fp-dialog.small { width: min(380px, 92vw); }
+dialog.fp-dialog.small { width: min(380px, calc(100vw - 24px)); }
 
 .fp-dialog-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0 0 10px 0;
+  margin: 0 0 12px 0;
 }
 .fp-dialog-head h2 {
   margin: 0;
-  font-family: "Dongle", "Quicksand", "Pretendard", sans-serif;
-  font-size: 1.7rem;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: -0.01em;
 }
 .fp-dialog-head .x {
-  background: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   border: none;
+  border-radius: var(--radius-sm);
+  background: none;
   font-size: 22px;
+  line-height: 1;
   color: var(--muted);
   cursor: pointer;
-  line-height: 1;
+  transition: background 140ms ease, color 140ms ease;
 }
-.fp-dialog-head .x:hover { color: var(--text); }
+.fp-dialog-head .x:hover { background: var(--surface-2); color: var(--text); }
 
+.fp-dialog p { margin: 0 0 10px 0; }
 .fp-dialog-foot {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 16px;
 }
 
-.caption { color: var(--muted); margin: 0 0 10px 0; font-size: 0.9rem; }
-.hint { color: var(--muted); font-size: 0.85rem; }
+.caption { color: var(--muted); font-size: 13px; }
+.hint { color: var(--muted); font-size: 12px; font-weight: 500; }
 
 .error-msg {
-  background: #FBE8E0;
-  border: 1px solid #E5BBA8;
-  color: #8E3B23;
-  padding: 8px 10px;
+  margin-top: 8px;
+  padding: 10px 12px;
   border-radius: 10px;
-  margin-top: 6px;
-  font-size: 0.9rem;
+  border: 1px solid var(--danger-line);
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  font-size: 13px;
+  font-weight: 500;
 }
 
 /* ─── Toast ───────────────────────────────────────────── */
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 32px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  background: var(--text);
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 11px 18px;
+  border-radius: var(--radius);
+  background: #14161A;
+  color: #FFFFFF;
+  font-size: 14px;
   font-weight: 600;
+  text-align: center;
   z-index: 9999;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ─── Leaflet 기본 요소 (폰트 / 컨트롤) ───────────────── */
+.leaflet-container {
+  font-family: var(--font);
+  font-weight: 500;
+}
+.leaflet-touch .leaflet-bar,
+.leaflet-bar {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+.leaflet-touch .leaflet-bar a,
+.leaflet-bar a {
+  width: var(--ctl);
+  height: var(--ctl);
+  line-height: var(--ctl);
+  background: var(--surface);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.leaflet-bar a:last-child { border-bottom: none; }
+.leaflet-bar a:hover,
+.leaflet-bar a:focus { background: var(--surface-2); color: var(--text); }
+.leaflet-bar a.leaflet-disabled { background: var(--surface-2); color: #A1A7B3; }
+.leaflet-touch .leaflet-control-zoom-in,
+.leaflet-touch .leaflet-control-zoom-out,
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+  font-family: var(--font);
+  font-size: 22px;
+  font-weight: 500;
+}
+.leaflet-bottom.leaflet-right {
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) 0;
+}
+.leaflet-container .leaflet-control-attribution {
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px 0 0 0;
 }
 
 /* ─── Leaflet 마커 / 툴팁 ────────────────────────────── */
-.leaflet-tooltip,
-.leaflet-tooltip-pane .leaflet-tooltip {
-  font-family: "Dongle", "Quicksand", "Pretendard", "Noto Sans KR", sans-serif !important;
-  font-size: 21px !important;
-  font-weight: 400 !important;
-  line-height: 1.1 !important;
-  color: #3F3328 !important;
-  padding: 4px 12px !important;
-  background: #FFFDFA !important;
-  border: 1.5px solid #E5C9B6 !important;
-  border-radius: 14px !important;
-  box-shadow: 0 4px 14px rgba(120, 86, 60, 0.14) !important;
-  white-space: nowrap !important;
-  opacity: 1 !important;
-  letter-spacing: 0.2px !important;
-  pointer-events: none !important;
+.leaflet-tooltip {
+  padding: 5px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
 }
-.leaflet-tooltip-top:before {
-  border-top-color: #E5C9B6 !important;
-  border-width: 8px 8px 0 !important;
-  margin-left: -8px !important;
+
+/* 클러스터 — 기본 초록/노랑/주황 대신 현재 포인트 색 */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background-color: var(--accent-ring);
+}
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background-color: var(--accent);
+  color: #FFFFFF;
+  font-family: var(--font);
+  font-weight: 700;
 }
 
 /* 마커 강조 (활성 마커 부각) */
@@ -468,103 +672,140 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
 
 /* 임시 마커(등록 모드)는 살짝 강조 */
 .fp-temp-host {
-  filter: drop-shadow(0 0 10px rgba(199, 124, 102, 0.6));
+  filter: drop-shadow(0 2px 8px rgba(20, 22, 26, 0.45));
 }
 
 /* ─── Leaflet 팝업 (정보 + 액션 버튼) ────────────────── */
 .leaflet-popup-content-wrapper {
-  border-radius: 16px !important;
-  background: #FFFDFA !important;
-  border: 1px solid var(--card-border);
-  box-shadow: 0 10px 30px rgba(120, 86, 60, 0.18) !important;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
 }
 .leaflet-popup-tip {
-  background: #FFFDFA !important;
+  background: var(--surface);
+  box-shadow: none;
 }
 .leaflet-popup-content {
-  margin: 17px 19px 14px 16px !important;
+  margin: 16px 18px 16px 18px;
   min-width: 240px;
-  color: var(--text);
-  font-family: "Quicksand", "Pretendard", "Noto Sans KR", sans-serif;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
 }
-.leaflet-popup-close-button {
-  font-size: 22px !important;
-  color: var(--muted) !important;
-  padding: 7px 11px 0 0 !important;
+.leaflet-container a.leaflet-popup-close-button {
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  font: 400 20px/28px var(--font);
+  color: var(--muted);
+}
+.leaflet-container a.leaflet-popup-close-button:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
+.fp-popup { --u: var(--ws); --u-soft: var(--ws-soft); }
+.fp-popup.user-hm { --u: var(--hm); --u-soft: var(--hm-soft); }
+
 .fp-popup .place {
-  font-family: "Dongle", "Quicksand", "Pretendard", sans-serif;
-  font-size: 1.8rem;
+  padding-right: 22px;                   /* 닫기 버튼과 겹치지 않게 */
+  font-size: 18px;
   font-weight: 700;
-  line-height: 1.1;
-  margin-bottom: 4px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
 }
 .fp-popup .meta {
-  font-size: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 4px 0 10px 0;
+  font-size: 13px;
   color: var(--muted);
-  margin-bottom: 8px;
 }
+.fp-popup .author {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--text);
+}
+.fp-popup .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--u);
+}
+.fp-popup .stars { letter-spacing: 1px; color: var(--star-on); }
+.fp-popup .stars .off { color: var(--star-off); }
 .fp-popup .review {
-  background: var(--info-bg);
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 10px;
-  border-left: 4px solid var(--accent-ws);
-  font-size: 0.95rem;
+  background: var(--u-soft);
+  font-size: 14px;
   line-height: 1.5;
   word-break: break-word;
   white-space: normal;
-  max-width: 320px;
 }
-.fp-popup.user-hm .review { border-left-color: var(--accent-hm); }
 .fp-popup .actions {
   display: flex;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 12px;
 }
 .fp-popup .actions button {
   flex: 1;
+  min-height: 38px;
+  padding: 0 12px;
   border-radius: 10px;
-  border: 1px solid var(--card-border);
-  background: var(--card-bg);
-  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  font: inherit;
+  transition: background 140ms ease;
 }
+.fp-popup .actions button:hover { background: var(--surface-2); }
 .fp-popup .actions button.edit {
-  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-hover) 100%);
-  border-color: var(--primary-hover);
-  color: #FFFDFB;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #FFFFFF;
 }
+.fp-popup .actions button.edit:hover { background: var(--accent-hover); }
 .fp-popup .actions button.del {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: #fff;
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  color: var(--danger-text);
 }
+.fp-popup .actions button.del:hover { background: #FEE4E2; }
 .fp-popup .actions button:disabled {
-  background: var(--disabled);
-  border-color: var(--disabled);
-  color: #fff;
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: #A1A7B3;
   cursor: not-allowed;
 }
 .fp-popup .ownership-note {
-  margin-top: 10px;
-  padding: 6px 10px;
-  background: var(--warning-bg);
+  margin-top: 12px;
+  padding: 8px 12px;
   border-radius: 10px;
-  font-size: 0.85rem;
+  background: var(--surface-2);
+  font-size: 12px;
   color: var(--muted);
 }
 
 /* ─── Image upload (모달 안 그리드 / 썸네일) ─────────── */
 .image-block {
-  margin: 8px 0 12px 0;
+  margin: 6px 0 14px 0;
 }
 .image-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 8px;
 }
 .image-grid:empty { display: none; }
@@ -573,8 +814,8 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
   aspect-ratio: 1 / 1;
   border-radius: 10px;
   overflow: hidden;
-  background: var(--info-bg);
-  border: 1px solid var(--card-border);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
 }
 .thumb img {
   width: 100%;
@@ -587,20 +828,21 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
   position: absolute;
   top: 4px;
   right: 4px;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   border-radius: 50%;
-  background: rgba(63, 51, 40, 0.78);
-  color: #fff;
+  background: rgba(20, 22, 26, 0.72);
+  color: #FFFFFF;
   border: none;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-.thumb .rm:hover { background: rgba(63, 51, 40, 0.95); }
+.thumb .rm:hover { background: rgba(20, 22, 26, 0.92); }
 
 /* ─── 팝업 안 작은 썸네일 ────────────────────────────── */
 .popup-images {
@@ -615,8 +857,8 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
   border-radius: 8px;
   object-fit: cover;
   cursor: zoom-in;
-  border: 1px solid var(--card-border);
-  background: var(--info-bg);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
   transition: transform 100ms ease;
 }
 .popup-thumb:hover {
@@ -627,12 +869,14 @@ dialog.fp-dialog.small { width: min(380px, 92vw); }
 dialog.lightbox {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   max-width: 100vw;
   max-height: 100vh;
+  max-height: 100dvh;
   margin: 0;
   padding: 0;
   border: none;
-  background: rgba(20, 14, 10, 0.88);
+  background: rgba(10, 12, 16, 0.92);
   cursor: zoom-out;
   overflow: hidden;
 }
@@ -650,22 +894,24 @@ dialog.lightbox::backdrop {
   to   { opacity: 1; }
 }
 dialog.lightbox img {
-  max-width: 90vw;
-  max-height: 88vh;
-  border-radius: 14px;
+  max-width: 92vw;
+  max-height: 86vh;
+  max-height: 86dvh;
+  border-radius: var(--radius);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
-  background: #fff;
+  background: #FFFFFF;
 }
 .lightbox-close {
   position: absolute;
-  top: 18px;
-  right: 22px;
-  width: 44px;
-  height: 44px;
-  border-radius: 22px;
+  top: calc(16px + env(safe-area-inset-top));
+  right: calc(16px + env(safe-area-inset-right));
+  width: var(--ctl);
+  height: var(--ctl);
+  padding: 0;
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.16);
   border: none;
-  color: #fff;
+  color: #FFFFFF;
   font-size: 28px;
   line-height: 1;
   cursor: pointer;
@@ -676,70 +922,61 @@ dialog.lightbox img {
 .lightbox-close:hover { background: rgba(255, 255, 255, 0.28); }
 
 /* ─── 마커 고르기 ────────────────────────────────────── */
-/* '내 마커 바꾸기' — 테마와 무관한 옅은 베이지 버튼 ([새 발자국 등록] 아래) */
-.btn.btn-change-marker {
-  margin-top: 8px;
-  background: #F8F1E6;
-  border-color: #E9DCC8;
-  color: #6B5A47;
-}
-.btn.btn-change-marker:hover {
-  background: #F2E7D6;
-  border-color: #DCC8AC;
-}
-/* .btn.block 의 display:block 이 hidden 속성을 덮어쓰지 않도록 */
-.btn-change-marker[hidden] {
-  display: none;
-}
-
 /* 3열 그리드 — 후보가 늘어나면 행이 자동으로 추가된다 (9개 = 3×3).
    그 이상이 되면 모달 안에서 스크롤. */
 .marker-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  max-height: min(480px, 60vh);
+  max-height: min(420px, 50vh);
+  max-height: min(420px, 50dvh);
   overflow-y: auto;
   padding: 2px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .marker-option {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 10px 6px 8px 6px;
-  border-radius: 14px;
-  border: 2px solid var(--card-border);
-  background: var(--card-bg);
+  gap: 6px;
+  padding: 12px 6px 10px 6px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
   color: var(--text);
   font: inherit;
   cursor: pointer;
-  transition: border-color 140ms ease, box-shadow 140ms ease, transform 80ms ease;
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
 }
 .marker-option:hover:not(:disabled) {
-  border-color: var(--primary);
-  transform: translateY(-1px);
+  border-color: var(--border-strong);
+  background: var(--surface-2);
 }
 .marker-option:focus-visible {
-  outline: 3px solid var(--primary);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .marker-option.is-selected {
-  border-color: var(--map-border-active);
-  background: var(--info-bg);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(120, 86, 60, 0.18);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent);
 }
+/* 선택 표시 — 체크 아이콘 (SVG 데이터 URI, 폰트/이모지 무관) */
 .marker-option.is-selected::after {
-  content: "✓";
+  content: "";
   position: absolute;
-  top: 6px;
+  top: 8px;
   right: 8px;
-  font-weight: 700;
-  color: var(--map-border-active);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.6 6.4l2.2 2.2L9.4 3.8' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 12px no-repeat,
+    var(--accent);
 }
-/* 본인이 현재 쓰는 마커 / 다른 유저가 쓰는 마커 — 50% 투명, 선택 불가 */
+/* 다른 유저가 쓰는 마커 — 50% 투명, 선택 불가 */
 .marker-option.is-locked {
   opacity: 0.5;
   cursor: not-allowed;
@@ -752,51 +989,42 @@ dialog.lightbox img {
   justify-content: center;
 }
 .marker-thumb img {
-  width: 50px;                   /* 마커 비율 1 : 1.3 */
+  width: 50px;                           /* 마커 비율 1 : 1.3 */
   height: 65px;
   object-fit: contain;
   display: block;
 }
 .marker-name {
+  font-size: 14px;
   font-weight: 700;
-  font-size: 0.92rem;
   line-height: 1.2;
   word-break: keep-all;
   text-align: center;
 }
 .marker-tag {
-  font-size: 0.72rem;
-  font-weight: 600;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--divider);
+  background: var(--surface-2);
   color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
 }
 .marker-tag.mine {
-  background: var(--info-bg);
+  background: var(--accent-soft);
   color: var(--text);
 }
 .marker-legend {
   margin: 0 0 4px 0;
 }
 
-/* 저장/업로드 진행 중 비활성 */
-.btn.is-busy {
-  opacity: 0.65;
-  pointer-events: none;
+/* ─── 작은 화면 (아이폰 13 mini 등) ───────────────────── */
+@media (max-width: 480px) {
+  dialog.fp-dialog { padding: 16px; }
+  .marker-grid { gap: 8px; }
 }
 
-/* ─── 모바일 ──────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .layout {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 12px;
-  }
-  .menu {
-    height: auto;
-    overflow: visible;
-  }
-  #map { height: 60vh; }
+@media (prefers-reduced-motion: reduce) {
+  .drawer, .drawer-scrim { transition: none; }
+  #map.is-adding::after, .fp-active-host { animation: none; }
 }

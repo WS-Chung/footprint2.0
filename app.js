@@ -151,9 +151,10 @@
   const map = L.map("map", {
     center: DEFAULT_CENTER,
     zoom: 12,
-    zoomControl: true,
+    zoomControl: false,             // 좌상단은 햄버거 버튼 자리 — 확대/축소는 우하단으로
     preferCanvas: false,
   });
+  L.control.zoom({ position: "bottomright" }).addTo(map);
 
   if (VWORLD_KEY) {
     L.tileLayer(
@@ -291,22 +292,63 @@
     }, ms);
   }
 
-  function setStatus(text) {
+  // 지도 위 상태 표시줄. cancelable 이면 '취소' 버튼(등록 모드 종료)을 함께 보여 준다.
+  // 등록 모드에서는 메뉴가 닫혀 있고 모바일엔 ESC 가 없어서 여기에 취소 수단이 필요하다.
+  function setStatus(text, cancelable = false) {
     const el = $("#map-status");
+    const cancelBtn = $("#btn-cancel-add");
     if (!text) {
       el.hidden = true;
-      el.textContent = "";
+      $("#map-status-text").textContent = "";
+      cancelBtn.hidden = true;
     } else {
-      el.textContent = text;
+      $("#map-status-text").textContent = text;
+      cancelBtn.hidden = !cancelable;
       el.hidden = false;
     }
   }
+
+  // ── 슬라이드 메뉴 (햄버거 버튼) ──────────────────────
+  const drawer = $("#drawer");
+  const drawerScrim = $("#drawer-scrim");
+  const menuBtn = $("#btn-menu");
+
+  const mapArea = $(".map-area");
+
+  // 포커스는 키보드로 조작했을 때만 옮긴다 — 터치/마우스에서는 포커스 링이 괜히 뜨지 않게.
+  let lastInputWasKeyboard = false;
+  window.addEventListener("keydown", () => { lastInputWasKeyboard = true; }, true);
+  window.addEventListener("pointerdown", () => { lastInputWasKeyboard = false; }, true);
+
+  function isDrawerOpen() {
+    return drawer.classList.contains("is-open");
+  }
+  function setDrawer(open) {
+    if (open === isDrawerOpen()) return;
+    const hadFocusInside = drawer.contains(document.activeElement);
+    drawer.classList.toggle("is-open", open);
+    drawerScrim.classList.toggle("is-open", open);
+    // 열려 있는 동안 뒤쪽 지도/버튼은 키보드·스크린리더로 접근하지 못하게 한다 (간이 포커스 트랩)
+    mapArea.inert = open;
+    menuBtn.setAttribute("aria-expanded", String(open));
+    menuBtn.setAttribute("aria-label", open ? "메뉴 닫기" : "메뉴 열기");
+    if (!lastInputWasKeyboard) return;
+    if (open) {
+      // 닫혀 있던 동안 visibility:hidden 이라 다음 프레임에 포커스를 옮긴다
+      requestAnimationFrame(() => $("#btn-drawer-close").focus({ preventScroll: true }));
+    } else if (hadFocusInside) {
+      menuBtn.focus({ preventScroll: true });
+    }
+  }
+  menuBtn.addEventListener("click", () => setDrawer(!isDrawerOpen()));
+  drawerScrim.addEventListener("click", () => setDrawer(false));
+  $("#btn-drawer-close").addEventListener("click", () => setDrawer(false));
 
   // ── 사용자 배지 ─────────────────────────────────────
   function renderUserBadge() {
     const badge = $("#user-badge");
     if (state.user == null) {
-      badge.innerHTML = "💭 활동할 사용자를 선택해 주세요";
+      badge.innerHTML = "활동할 사용자를 선택해 주세요";
       badge.classList.remove("user-hm");
       badge.classList.add("user-none");
       return;
@@ -386,9 +428,11 @@
   // ── 팝업 HTML ──────────────────────────────────────
   function popupHtml(row) {
     const isWs = row.user_name === "운석";
-    const stars = "⭐".repeat(Number(row.rating || 0));
+    const rating = Math.min(5, Math.max(0, Number(row.rating || 0)));
+    const stars = rating
+      ? `<span class="stars" role="img" aria-label="별점 ${rating}점">${"★".repeat(rating)}<span class="off">${"★".repeat(5 - rating)}</span></span>`
+      : "별점 없음";
     const isOwner = row.user_name === state.user;
-    const userIcon = isWs ? "🩵" : "🩷";
     const cls = "fp-popup " + (isWs ? "user-ws" : "user-hm");
 
     const images = parseImages(row.image_url);
@@ -405,8 +449,8 @@
 
     const actions = isOwner
       ? `<div class="actions">
-           <button class="edit" data-action="edit" data-id="${row.id}">✏️ 수정</button>
-           <button class="del"  data-action="delete" data-id="${row.id}">🗑 삭제</button>
+           <button class="edit" data-action="edit" data-id="${row.id}">수정</button>
+           <button class="del"  data-action="delete" data-id="${row.id}">삭제</button>
          </div>`
       : `<div class="ownership-note">
            본인이 등록한 발자국만 수정·삭제할 수 있어요.
@@ -414,8 +458,10 @@
 
     return `<div class="${cls}">
       <div class="place">${escapeHtml(row.place_name || "")}</div>
-      <div class="meta">${userIcon} <b>${escapeHtml(row.user_name)}</b>
-        · 📅 ${escapeHtml(row.visit_date || "-")} · ${stars || "별점 없음"}
+      <div class="meta">
+        <span class="author"><span class="dot" aria-hidden="true"></span>${escapeHtml(row.user_name)}</span>
+        <span>${escapeHtml(row.visit_date || "-")}</span>
+        <span>${stars}</span>
       </div>
       <div class="review">${escapeHtml(row.review || "-")}</div>
       ${imagesHtml}
@@ -437,7 +483,13 @@
       sticky: false,
       interactive: false,
     });
-    marker.bindPopup(() => popupHtml(row), { maxWidth: 360 });
+    // 좁은 화면(아이폰 13 mini 등)에서는 화면 폭에 맞춰 줄이고,
+    // 자동 이동 시 좌상단 햄버거 버튼에 가리지 않게 위쪽 여백을 더 준다.
+    marker.bindPopup(() => popupHtml(row), {
+      maxWidth: Math.max(220, Math.min(320, window.innerWidth - 96)),
+      autoPanPaddingTopLeft: [16, 72],
+      autoPanPaddingBottomRight: [16, 16],
+    });
 
     // 마우스를 떼는 즉시 툴팁이 사라지도록 명시 처리. 가끔 마커 사이를 빠르게
     // 오갈 때 툴팁이 두 개 보이는 현상을 방지한다.
@@ -581,11 +633,11 @@
   function setAddMode(on) {
     state.isAdding = on;
     $("#btn-add-mode").hidden = on;
-    $("#add-hint").hidden = !on;
     $("#map").classList.toggle("is-adding", on);
     if (on) {
-      setStatus("📍 지도를 클릭해 위치를 선택하세요");
-      // 진행 중이던 팝업 닫고 강조 해제
+      setStatus("지도를 클릭해 위치를 선택하세요", true);
+      // 지도를 눌러야 하므로 메뉴는 닫고, 진행 중이던 팝업도 닫고 강조 해제
+      setDrawer(false);
       map.closePopup();
       setActive(null);
     } else {
@@ -731,7 +783,7 @@
       return;
     }
     if (!rating) {
-      errEl.textContent = "별점을 선택해 주세요. ⭐";
+      errEl.textContent = "별점을 선택해 주세요.";
       errEl.hidden = false;
       return;
     }
@@ -741,7 +793,7 @@
       return;
     }
     submitBtn.classList.add("is-busy");
-    submitBtn.textContent = "💾 저장 중...";
+    submitBtn.textContent = "저장 중...";
     try {
       // 1) DB INSERT — 우선 이미지 없이 행 생성 (id 확보)
       const newRow = await insertFootprint({
@@ -757,7 +809,7 @@
 
       // 2) 이미지 압축 + 업로드
       if (addPendingFiles.length) {
-        submitBtn.textContent = "📷 이미지 업로드 중...";
+        submitBtn.textContent = "이미지 업로드 중...";
         const urls = await Promise.all(
           addPendingFiles.map((f) => uploadCompressed(newRow.id, f)),
         );
@@ -774,7 +826,7 @@
       errEl.hidden = false;
     } finally {
       submitBtn.classList.remove("is-busy");
-      submitBtn.textContent = "💾 저장";
+      submitBtn.textContent = "저장";
     }
   });
 
@@ -880,7 +932,7 @@
       return;
     }
     if (!rating) {
-      errEl.textContent = "별점을 선택해 주세요. ⭐";
+      errEl.textContent = "별점을 선택해 주세요.";
       errEl.hidden = false;
       return;
     }
@@ -891,13 +943,13 @@
     }
 
     submitBtn.classList.add("is-busy");
-    submitBtn.textContent = "💾 저장 중...";
+    submitBtn.textContent = "저장 중...";
     try {
       // 1) 새 이미지 업로드
       const pending = editItems.filter((x) => x.type === "pending");
       let newUrls = [];
       if (pending.length) {
-        submitBtn.textContent = "📷 이미지 업로드 중...";
+        submitBtn.textContent = "이미지 업로드 중...";
         newUrls = await Promise.all(
           pending.map((p) => uploadCompressed(id, p.file)),
         );
@@ -932,7 +984,7 @@
       errEl.hidden = false;
     } finally {
       submitBtn.classList.remove("is-busy");
-      submitBtn.textContent = "💾 저장";
+      submitBtn.textContent = "저장";
     }
   });
 
@@ -1076,7 +1128,7 @@
     const btn = $("#marker-submit");
     const isCurrent = markerPickSelected === markerFileFor(state.user);
     btn.disabled = !markerPickSelected;
-    btn.textContent = isCurrent ? "✅ 이대로 사용" : "✅ 이 마커로 변경";
+    btn.textContent = isCurrent ? "이대로 사용" : "이 마커로 변경";
   }
 
   // file → 사용 중인 user_name (본인 포함)
@@ -1200,7 +1252,7 @@
     }
 
     btn.classList.add("is-busy");
-    btn.textContent = "💾 저장 중...";
+    btn.textContent = "저장 중...";
     try {
       const { error } = await supa
         .from(MARKER_TABLE)
@@ -1260,10 +1312,14 @@
 
   // ── ESC 처리 ──────────────────────────────────────
   // 다이얼로그(라이트박스/추가/수정/삭제) 가 열려 있으면 native ESC 가 알아서 닫는다.
-  // 그 외에 등록 모드만 활성일 때는 ESC 로 모드 종료.
+  // 그 외에는 메뉴가 열려 있으면 메뉴를, 등록 모드만 활성일 때는 모드를 종료.
   window.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     if (document.querySelector("dialog[open]")) return;
+    if (isDrawerOpen()) {
+      setDrawer(false);
+      return;
+    }
     if (state.isAdding) setAddMode(false);
   });
 })();
